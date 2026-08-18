@@ -65,10 +65,12 @@ namespace Presentation.Controllers
                 return NotFound($"There is no element that match with the id {id}");
             }
 
-            if (!Cases.Remove(caseItem))
+            if (!caseItem.Active)
             {
-                return Conflict($"Problem to delete the item {id}");
+                return Conflict($"The case with id {id} is already inactive");
             }
+
+            caseItem.Active = false;
 
             return NoContent();
         }

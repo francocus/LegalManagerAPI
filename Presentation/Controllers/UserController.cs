@@ -61,10 +61,12 @@ namespace Presentation.Controllers
                 return NotFound($"There is no element that match with the id {id}");
             }
 
-            if (!Users.Remove(user))
+            if (!user.Active)
             {
-                return Conflict($"Problem to delete the item {id}");
+                return Conflict($"The user with id {id} is already inactive");
             }
+
+            user.Active = false;
 
             return NoContent();
         }

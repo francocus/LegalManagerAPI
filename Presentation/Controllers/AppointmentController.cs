@@ -27,6 +27,7 @@ namespace Presentation.Controllers
             objetoAppointment.ClientId = appointment.ClientId;
             objetoAppointment.LawyerId = appointment.LawyerId;
             objetoAppointment.CaseId = appointment.CaseId;
+            objetoAppointment.Active = appointment.Active;
 
             Appointments.Add(objetoAppointment);
 
@@ -67,10 +68,12 @@ namespace Presentation.Controllers
                 return NotFound($"There is no element that match with the id {id}");
             }
 
-            if (!Appointments.Remove(appointment))
+            if (!appointment.Active)
             {
-                return Conflict($"Problem to delete the item {id}");
+                return Conflict($"The appointment with id {id} is already inactive");
             }
+
+            appointment.Active = false;
 
             return NoContent();
         }
@@ -115,6 +118,7 @@ namespace Presentation.Controllers
             appointmentFound.ClientId = appointment.ClientId;
             appointmentFound.LawyerId = appointment.LawyerId;
             appointmentFound.CaseId = appointment.CaseId;
+            appointmentFound.Active = appointment.Active;
 
             return Ok(appointmentFound);
         }

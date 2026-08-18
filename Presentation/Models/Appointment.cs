@@ -15,5 +15,6 @@
         public int ClientId { get; set; }
         public int LawyerId { get; set; }
         public int? CaseId { get; set; }
+        public bool Active { get; set; } = true;
     }
 }

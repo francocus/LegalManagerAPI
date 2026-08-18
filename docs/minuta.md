@@ -22,7 +22,7 @@ A continuación, se detallan las funcionalidades con las que debe cumplir el sis
 
 ### A. Módulo de Gestión de Usuarios (Sysadmin)
 
-- **Administración (CRUD):** El administrador deberá poder crear, leer, actualizar y eliminar cuentas de usuario.
+- **Administración (CRUD):** El administrador deberá poder crear, leer, actualizar y dar de baja cuentas de usuario mediante baja lógica (desactivación), sin eliminarlas de forma permanente.
 - **Asignación de Roles:** Capacidad de designar a los usuarios registrados como Administradores, Abogados o Clientes, restringiendo sus vistas y permisos en el sistema.
 
 ### B. Módulo de Gestión de Expedientes (Casos Legales)
@@ -42,6 +42,7 @@ A continuación, se detallan las funcionalidades con las que debe cumplir el sis
 
 - **Control de Acceso:** Login seguro para todos los usuarios.
 - **Accesibilidad Visual:** Inclusión de un interruptor para alternar la interfaz entre "Modo Claro" y "Modo Oscuro" (Light/Dark Theme), mejorando la experiencia de uso.
+- **Baja Lógica:** Todas las entidades del sistema (Usuarios, Expedientes, Turnos) utilizan borrado lógico. Ninguna acción de "eliminar" borra el registro de forma permanente; únicamente lo marca como inactivo, preservando el historial completo.
 
 ## 4. Anexo: Diagrama de Clases Conceptual
 

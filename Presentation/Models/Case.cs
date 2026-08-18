@@ -13,5 +13,6 @@
         public string? Notes { get; set; }
         public int ClientId { get; set; }
         public int LawyerId { get; set; }
+        public bool Active { get; set; } = true;
     }
 }
