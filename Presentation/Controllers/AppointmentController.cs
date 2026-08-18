@@ -118,7 +118,6 @@ namespace Presentation.Controllers
             appointmentFound.ClientId = appointment.ClientId;
             appointmentFound.LawyerId = appointment.LawyerId;
             appointmentFound.CaseId = appointment.CaseId;
-            appointmentFound.Active = appointment.Active;
 
             return Ok(appointmentFound);
         }

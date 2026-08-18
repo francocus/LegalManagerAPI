@@ -104,7 +104,6 @@ namespace Presentation.Controllers
             userFound.Email = user.Email;
             userFound.Password = user.Password;
             userFound.Role = user.Role;
-            userFound.Active = user.Active;
 
             return Ok(userFound);
         }

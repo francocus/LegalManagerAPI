@@ -25,6 +25,7 @@ namespace Presentation.Controllers
             objetoCase.Notes = caseItem.Notes;
             objetoCase.ClientId = caseItem.ClientId;
             objetoCase.LawyerId = caseItem.LawyerId;
+            objetoCase.Active = caseItem.Active;
 
             Cases.Add(objetoCase);
 
