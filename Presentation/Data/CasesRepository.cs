@@ -7,7 +7,11 @@ namespace Presentation.Data
         private static readonly List<Case> cases = new List<Case>();
 
         public static void Add(Case caseItem) => cases.Add(caseItem);
-        public static IReadOnlyList<Case> GetAll() => cases.AsReadOnly();
-        public static Case? GetById(int id) => cases.FirstOrDefault(c => c.Id == id);
+
+        public static IReadOnlyList<Case> GetAll()
+            => cases.Where(c => c.Active).ToList().AsReadOnly();
+
+        public static Case? GetById(int id)
+            => cases.FirstOrDefault(c => c.Id == id && c.Active);
     }
 }
