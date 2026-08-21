@@ -2,12 +2,53 @@
 {
     public class User
     {
-        public int Id { get; set; }
-        public string? Name { get; set; }
-        public string? Dni { get; set; }
-        public string? Email { get; set; }
-        public string? Password { get; set; }
-        public string? Role { get; set; } = string.Empty; // "cliente" | "abogado" | "sysadmin"
-        public bool Active { get; set; } = true;
+        private static int nextId = 1;
+        private static readonly string[] ValidRoles = { "cliente", "abogado", "sysadmin" };
+
+        public int Id { get; }
+        public string Name { get; private set; }
+        public string Dni { get; private set; }
+        public string Email { get; private set; }
+        public string Password { get; private set; }
+        public string Role { get; }
+        public bool Active { get; private set; }
+
+        public User(string name, string dni, string email, string password, string role)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Name is required.", nameof(name));
+
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("Email is required.", nameof(email));
+
+            if (!ValidRoles.Contains(role))
+                throw new ArgumentException($"Invalid role. Allowed values: {string.Join(", ", ValidRoles)}.", nameof(role));
+
+            Id = nextId++;
+            Name = name;
+            Dni = dni;
+            Email = email;
+            Password = password;
+            Role = role;
+            Active = true;
+        }
+
+        public void UpdateDetails(string name, string dni, string email)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Name is required.", nameof(name));
+
+            Name = name;
+            Dni = dni;
+            Email = email;
+        }
+
+        public void Deactivate()
+        {
+            if (!Active)
+                throw new InvalidOperationException("The user is already inactive.");
+
+            Active = false;
+        }
     }
 }

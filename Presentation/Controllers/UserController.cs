@@ -1,4 +1,6 @@
-﻿using Presentation.Models;
+﻿using Presentation.Data;
+using Presentation.DTOs;
+using Presentation.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Presentation.Controllers
@@ -7,105 +9,69 @@ namespace Presentation.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private static readonly List<User> Users = new List<User>();
-
         [HttpPost]
-        public ActionResult Create([FromBody] User user)
+        public ActionResult<User> Create([FromBody] CreateUserRequest request)
         {
-            var objetoUser = new User();
-
-            objetoUser.Id = user.Id;
-            objetoUser.Name = user.Name;
-            objetoUser.Dni = user.Dni;
-            objetoUser.Email = user.Email;
-            objetoUser.Password = user.Password;
-            objetoUser.Role = user.Role;
-            objetoUser.Active = user.Active;
-
-            Users.Add(objetoUser);
-
-            return Created();
+            try
+            {
+                var user = new User(request.Name, request.Dni, request.Email, request.Password, request.Role);
+                UserRepository.Add(user);
+                return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet]
-        public ActionResult<List<User>> GetAll()
+        public ActionResult<IReadOnlyList<User>> GetAll()
         {
-            if (!Users.Any())
-            {
-                return NotFound("No elements within the list");
-            }
-
-            return Ok(Users);
+            var users = UserRepository.GetAll();
+            if (!users.Any()) return NotFound("No elements within the list");
+            return Ok(users);
         }
 
         [HttpGet("{id}")]
         public ActionResult<User> GetById([FromRoute] int id)
         {
-            var user = Users.FirstOrDefault(x => x.Id == id);
-
-            if (user == null)
-            {
-                return NotFound($"There is no element that match with the id {id}");
-            }
-
+            var user = UserRepository.GetById(id);
+            if (user == null) return NotFound($"There is no element that match with the id {id}");
             return Ok(user);
+        }
+
+        [HttpPut("{id}")]
+        public ActionResult<User> Update([FromRoute] int id, [FromBody] UpdateUserRequest request)
+        {
+            var user = UserRepository.GetById(id);
+            if (user == null) return NotFound($"There is no element that match with the id {id}");
+
+            try
+            {
+                user.UpdateDetails(request.Name, request.Dni, request.Email);
+                return Ok(user);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
         public ActionResult Delete([FromRoute] int id)
         {
-            var user = Users.FirstOrDefault(x => x.Id == id);
+            var user = UserRepository.GetById(id);
+            if (user == null) return NotFound($"There is no element that match with the id {id}");
 
-            if (user == null)
+            try
             {
-                return NotFound($"There is no element that match with the id {id}");
+                user.Deactivate();
+                return NoContent();
             }
-
-            if (!user.Active)
+            catch (InvalidOperationException ex)
             {
-                return Conflict($"The user with id {id} is already inactive");
+                return Conflict(ex.Message);
             }
-
-            user.Active = false;
-
-            return NoContent();
-        }
-
-        [HttpPatch("{id}")]
-        public ActionResult<User> PartialUpdate([FromRoute] int id, [FromBody] User user)
-        {
-            var userFound = Users.FirstOrDefault(x => x.Id == id);
-
-            if (userFound == null)
-            {
-                return NotFound($"There is no element that match with the id {id}");
-            }
-
-            userFound.Name = user.Name ?? userFound.Name;
-            userFound.Dni = user.Dni ?? userFound.Dni;
-            userFound.Email = user.Email ?? userFound.Email;
-            userFound.Role = user.Role ?? userFound.Role;
-
-            return Ok(userFound);
-        }
-
-        [HttpPut("{id}")]
-        public ActionResult<User> Update([FromRoute] int id, [FromBody] User user)
-        {
-            var userFound = Users.FirstOrDefault(x => x.Id == id);
-
-            if (userFound == null)
-            {
-                return NotFound($"There is no element that match with the id {id}");
-            }
-
-            userFound.Name = user.Name;
-            userFound.Dni = user.Dni;
-            userFound.Email = user.Email;
-            userFound.Password = user.Password;
-            userFound.Role = user.Role;
-
-            return Ok(userFound);
         }
     }
 }

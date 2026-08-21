@@ -1,4 +1,6 @@
-﻿using Presentation.Models;
+﻿using Presentation.Data;
+using Presentation.DTOs;
+using Presentation.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Presentation.Controllers
@@ -7,119 +9,113 @@ namespace Presentation.Controllers
     [ApiController]
     public class AppointmentController : ControllerBase
     {
-        private static readonly List<Appointment> Appointments = new List<Appointment>();
-
         [HttpPost]
-        public ActionResult Create([FromBody] Appointment appointment)
+        public ActionResult<Appointment> Create([FromBody] CreateAppointmentRequest request)
         {
-            var objetoAppointment = new Appointment();
+            if (AppointmentsRepository.HasScheduleConflict(request.LawyerId, request.Date, request.Time, request.EndTime))
+            {
+                return Conflict("The lawyer already has an appointment at that time.");
+            }
 
-            objetoAppointment.Id = appointment.Id;
-            objetoAppointment.Title = appointment.Title;
-            objetoAppointment.Date = appointment.Date;
-            objetoAppointment.Time = appointment.Time;
-            objetoAppointment.EndTime = appointment.EndTime;
-            objetoAppointment.Reason = appointment.Reason;
-            objetoAppointment.Status = appointment.Status;
-            objetoAppointment.Area = appointment.Area;
-            objetoAppointment.Location = appointment.Location;
-            objetoAppointment.Notes = appointment.Notes;
-            objetoAppointment.ClientId = appointment.ClientId;
-            objetoAppointment.LawyerId = appointment.LawyerId;
-            objetoAppointment.CaseId = appointment.CaseId;
-            objetoAppointment.Active = appointment.Active;
-
-            Appointments.Add(objetoAppointment);
-
-            return Created();
+            try
+            {
+                var appointment = new Appointment(request.Title, request.Date, request.Time, request.EndTime, request.Reason, request.Area, request.Location, request.Notes, request.ClientId, request.LawyerId, request.CaseId);
+                AppointmentsRepository.Add(appointment);
+                return CreatedAtAction(nameof(GetById), new { id = appointment.Id }, appointment);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet]
-        public ActionResult<List<Appointment>> GetAll()
+        public ActionResult<IReadOnlyList<Appointment>> GetAll()
         {
-            if (!Appointments.Any())
-            {
-                return NotFound("No elements within the list");
-            }
-
-            return Ok(Appointments);
+            var appointments = AppointmentsRepository.GetAll();
+            if (!appointments.Any()) return NotFound("No elements within the list");
+            return Ok(appointments);
         }
 
         [HttpGet("{id}")]
         public ActionResult<Appointment> GetById([FromRoute] int id)
         {
-            var appointment = Appointments.FirstOrDefault(x => x.Id == id);
+            var appointment = AppointmentsRepository.GetById(id);
+            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
+            return Ok(appointment);
+        }
 
-            if (appointment == null)
+        [HttpPatch("{id}/confirm")]
+        public ActionResult<Appointment> Confirm([FromRoute] int id)
+        {
+            var appointment = AppointmentsRepository.GetById(id);
+            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
+
+            try
             {
-                return NotFound($"There is no element that match with the id {id}");
+                appointment.Confirm();
+                return Ok(appointment);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+        }
+
+        [HttpPatch("{id}/cancel")]
+        public ActionResult<Appointment> Cancel([FromRoute] int id)
+        {
+            var appointment = AppointmentsRepository.GetById(id);
+            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
+
+            try
+            {
+                appointment.Cancel();
+                return Ok(appointment);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+        }
+
+        [HttpPatch("{id}/reschedule")]
+        public ActionResult<Appointment> Reschedule([FromRoute] int id, [FromBody] RescheduleAppointmentRequest request)
+        {
+            var appointment = AppointmentsRepository.GetById(id);
+            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
+
+            if (AppointmentsRepository.HasScheduleConflict(appointment.LawyerId, request.Date, request.Time, request.EndTime))
+            {
+                return Conflict("The lawyer already has an appointment at that time.");
             }
 
-            return Ok(appointment);
+            try
+            {
+                appointment.Reschedule(request.Date, request.Time, request.EndTime);
+                return Ok(appointment);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
         public ActionResult Delete([FromRoute] int id)
         {
-            var appointment = Appointments.FirstOrDefault(x => x.Id == id);
+            var appointment = AppointmentsRepository.GetById(id);
+            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
 
-            if (appointment == null)
+            try
             {
-                return NotFound($"There is no element that match with the id {id}");
+                appointment.Deactivate();
+                return NoContent();
             }
-
-            if (!appointment.Active)
+            catch (InvalidOperationException ex)
             {
-                return Conflict($"The appointment with id {id} is already inactive");
+                return Conflict(ex.Message);
             }
-
-            appointment.Active = false;
-
-            return NoContent();
-        }
-
-        [HttpPatch("{id}")]
-        public ActionResult<Appointment> PartialUpdate([FromRoute] int id, [FromBody] Appointment appointment)
-        {
-            var appointmentFound = Appointments.FirstOrDefault(x => x.Id == id);
-
-            if (appointmentFound == null)
-            {
-                return NotFound($"There is no element that match with the id {id}");
-            }
-
-            appointmentFound.Status = appointment.Status ?? appointmentFound.Status;
-            appointmentFound.Notes = appointment.Notes ?? appointmentFound.Notes;
-            appointmentFound.Location = appointment.Location ?? appointmentFound.Location;
-            appointmentFound.EndTime = appointment.EndTime ?? appointmentFound.EndTime;
-
-            return Ok(appointmentFound);
-        }
-
-        [HttpPut("{id}")]
-        public ActionResult<Appointment> Update([FromRoute] int id, [FromBody] Appointment appointment)
-        {
-            var appointmentFound = Appointments.FirstOrDefault(x => x.Id == id);
-
-            if (appointmentFound == null)
-            {
-                return NotFound($"There is no element that match with the id {id}");
-            }
-
-            appointmentFound.Title = appointment.Title;
-            appointmentFound.Date = appointment.Date;
-            appointmentFound.Time = appointment.Time;
-            appointmentFound.EndTime = appointment.EndTime;
-            appointmentFound.Reason = appointment.Reason;
-            appointmentFound.Status = appointment.Status;
-            appointmentFound.Area = appointment.Area;
-            appointmentFound.Location = appointment.Location;
-            appointmentFound.Notes = appointment.Notes;
-            appointmentFound.ClientId = appointment.ClientId;
-            appointmentFound.LawyerId = appointment.LawyerId;
-            appointmentFound.CaseId = appointment.CaseId;
-
-            return Ok(appointmentFound);
         }
     }
 }
