@@ -9,13 +9,23 @@ namespace Presentation.Controllers
     [ApiController]
     public class AppointmentController : ControllerBase
     {
+
         [HttpPost]
         public ActionResult<Appointment> Create([FromBody] CreateAppointmentRequest request)
         {
+            var client = UserRepository.GetById(request.ClientId);
+            if (client == null || client.Role != "cliente")
+                return BadRequest("El cliente indicado no es válido.");
+
+            var lawyer = UserRepository.GetById(request.LawyerId);
+            if (lawyer == null || lawyer.Role != "abogado")
+                return BadRequest("El abogado indicado no es válido.");
+
+            if (request.CaseId.HasValue && CasesRepository.GetById(request.CaseId.Value) == null)
+                return BadRequest("El expediente indicado no existe.");
+
             if (AppointmentsRepository.HasScheduleConflict(request.LawyerId, request.Date, request.Time, request.EndTime))
-            {
                 return Conflict("The lawyer already has an appointment at that time.");
-            }
 
             try
             {

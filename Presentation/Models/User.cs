@@ -10,7 +10,7 @@
         public string Dni { get; private set; }
         public string Email { get; private set; }
         public string Password { get; private set; }
-        public string Role { get; }
+        public string Role { get; private set; }
         public bool Active { get; private set; }
 
         public User(string name, string dni, string email, string password, string role)
@@ -41,6 +41,14 @@
             Name = name;
             Dni = dni;
             Email = email;
+        }
+
+        public void AssignRole(string role)
+        {
+            if (!ValidRoles.Contains(role))
+                throw new ArgumentException($"Invalid role. Allowed values: {string.Join(", ", ValidRoles)}.", nameof(role));
+
+            Role = role;
         }
 
         public void Deactivate()

@@ -15,7 +15,7 @@
         public string? Description { get; private set; }
         public string? Notes { get; private set; }
         public int ClientId { get; }
-        public int LawyerId { get; }
+        public int LawyerId { get; private set; }
         public bool Active { get; private set; }
 
         public Case(string caseNumber, string title, string area, DateOnly startDate, string? description, string? notes, int clientId, int lawyerId)
@@ -71,6 +71,17 @@
 
             Status = newStatus;
             LastUpdate = DateOnly.FromDateTime(DateTime.Now);
+        }
+
+        public void ReassignLawyer(int lawyerId)
+        {
+            if (lawyerId <= 0)
+                throw new ArgumentException("A valid lawyer id is required.", nameof(lawyerId));
+
+            if (Status == "cerrado")
+                throw new InvalidOperationException("Cannot reassign a closed case.");
+
+            LawyerId = lawyerId;
         }
 
         public void Deactivate()

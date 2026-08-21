@@ -3,6 +3,7 @@
     public class Appointment
     {
         private static int nextId = 1;
+        private static readonly string[] ValidSlots = { "09:00", "10:30", "12:00", "14:00", "15:30", "17:00" };
 
         public int Id { get; }
         public string Title { get; }
@@ -11,6 +12,10 @@
         public string EndTime { get; private set; }
         public string Reason { get; }
         public string Status { get; private set; }
+        public string EffectiveStatus =>
+            Status == "confirmado" && Date.ToDateTime(TimeOnly.Parse(Time)) < DateTime.Now
+                ? "finalizado"
+                : Status;
         public string? Area { get; }
         public string? Location { get; private set; }
         public string? Notes { get; private set; }
@@ -29,6 +34,9 @@
 
             if (lawyerId <= 0)
                 throw new ArgumentException("The appointment needs a lawyer assigned.", nameof(lawyerId));
+
+            if (!ValidSlots.Contains(time))
+                throw new ArgumentException($"Invalid time slot. Allowed values: {string.Join(", ", ValidSlots)}.", nameof(time));
 
             Id = nextId++;
             Title = title;
@@ -70,6 +78,9 @@
             if (Status == "cancelado")
                 throw new InvalidOperationException("Cannot reschedule a cancelled appointment.");
 
+            if (!ValidSlots.Contains(newTime))
+                throw new ArgumentException($"Invalid time slot. Allowed values: {string.Join(", ", ValidSlots)}.", nameof(newTime));
+
             Date = newDate;
             Time = newTime;
             EndTime = newEndTime;
@@ -91,6 +102,7 @@
         }
 
         public bool OverlapsWith(DateOnly date, string time, string endTime)
-            => Active && Status != "cancelado" && Date == date && Time == time;
+            => Active && EffectiveStatus == "confirmado" && Date == date && Time == time;
+
     }
 }
