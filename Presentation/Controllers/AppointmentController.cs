@@ -13,11 +13,11 @@ namespace Presentation.Controllers
         [HttpPost]
         public ActionResult<Appointment> Create([FromBody] CreateAppointmentRequest request)
         {
-            var client = UserRepository.GetById(request.ClientId);
+            var client = UsersRepository.GetById(request.ClientId);
             if (client == null || client.Role != "cliente")
                 return BadRequest("El cliente indicado no es válido.");
 
-            var lawyer = UserRepository.GetById(request.LawyerId);
+            var lawyer = UsersRepository.GetById(request.LawyerId);
             if (lawyer == null || lawyer.Role != "abogado")
                 return BadRequest("El abogado indicado no es válido.");
 

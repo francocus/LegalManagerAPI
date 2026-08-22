@@ -12,16 +12,16 @@ namespace Presentation.Controllers
         [HttpPost]
         public ActionResult<User> Create([FromBody] CreateUserRequest request)
         {
-            if (UserRepository.GetAll().Any(u => u.Email == request.Email))
+            if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
                 return Conflict("Ya existe un usuario con ese email.");
 
-            if (UserRepository.GetAll().Any(u => u.Dni == request.Dni))
+            if (UsersRepository.GetAll().Any(u => u.Dni == request.Dni))
                 return Conflict("Ya existe un usuario con ese DNI.");
 
             try
             {
                 var user = new User(request.Name, request.Dni, request.Email, request.Password, request.Role);
-                UserRepository.Add(user);
+                UsersRepository.Add(user);
                 return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
             }
             catch (ArgumentException ex)
@@ -33,7 +33,7 @@ namespace Presentation.Controllers
         [HttpGet]
         public ActionResult<IReadOnlyList<User>> GetAll()
         {
-            var users = UserRepository.GetAll();
+            var users = UsersRepository.GetAll();
             if (!users.Any()) return NotFound("No elements within the list");
             return Ok(users);
         }
@@ -41,7 +41,7 @@ namespace Presentation.Controllers
         [HttpGet("{id}")]
         public ActionResult<User> GetById([FromRoute] int id)
         {
-            var user = UserRepository.GetById(id);
+            var user = UsersRepository.GetById(id);
             if (user == null) return NotFound($"There is no element that match with the id {id}");
             return Ok(user);
         }
@@ -49,7 +49,7 @@ namespace Presentation.Controllers
         [HttpPut("{id}")]
         public ActionResult<User> Update([FromRoute] int id, [FromBody] UpdateUserRequest request)
         {
-            var user = UserRepository.GetById(id);
+            var user = UsersRepository.GetById(id);
             if (user == null) return NotFound($"There is no element that match with the id {id}");
 
             try
@@ -66,7 +66,7 @@ namespace Presentation.Controllers
         [HttpPatch("{id}/role")]
         public ActionResult<User> AssignRole([FromRoute] int id, [FromBody] AssignRoleRequest request)
         {
-            var user = UserRepository.GetById(id);
+            var user = UsersRepository.GetById(id);
             if (user == null) return NotFound($"There is no element that match with the id {id}");
 
             try
@@ -83,7 +83,7 @@ namespace Presentation.Controllers
         [HttpDelete("{id}")]
         public ActionResult Delete([FromRoute] int id)
         {
-            var user = UserRepository.GetById(id);
+            var user = UsersRepository.GetById(id);
             if (user == null) return NotFound($"There is no element that match with the id {id}");
 
             var hasActiveCases = CasesRepository.GetAll()

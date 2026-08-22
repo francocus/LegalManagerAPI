@@ -15,11 +15,11 @@ namespace Presentation.Controllers
             if (CasesRepository.GetAll().Any(c => c.CaseNumber == request.CaseNumber))
                 return Conflict("Ya existe un expediente con ese número.");
 
-            var client = UserRepository.GetById(request.ClientId);
+            var client = UsersRepository.GetById(request.ClientId);
             if (client == null || client.Role != "cliente")
                 return BadRequest("El cliente indicado no es válido.");
 
-            var lawyer = UserRepository.GetById(request.LawyerId);
+            var lawyer = UsersRepository.GetById(request.LawyerId);
             if (lawyer == null || lawyer.Role != "abogado")
                 return BadRequest("El abogado indicado no es válido.");
 
@@ -99,7 +99,7 @@ namespace Presentation.Controllers
             var caseItem = CasesRepository.GetById(id);
             if (caseItem == null) return NotFound($"There is no element that match with the id {id}");
 
-            var lawyer = UserRepository.GetById(request.LawyerId);
+            var lawyer = UsersRepository.GetById(request.LawyerId);
             if (lawyer == null || lawyer.Role != "abogado")
                 return BadRequest("El abogado indicado no es válido.");
 

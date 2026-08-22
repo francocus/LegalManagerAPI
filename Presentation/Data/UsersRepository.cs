@@ -2,7 +2,7 @@
 
 namespace Presentation.Data
 {
-    public static class UserRepository
+    public static class UsersRepository
     {
         private static readonly List<User> users = new List<User>();
 
