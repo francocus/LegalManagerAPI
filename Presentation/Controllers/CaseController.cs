@@ -73,7 +73,7 @@ namespace Presentation.Controllers
         }
 
         [HttpPatch("{id}/status")]
-        public ActionResult<Case> ChangeStatus([FromRoute] int id, [FromBody] ChangeCaseStatusRequest request)
+        public ActionResult<Case> ChangeStatus([FromRoute] int id, [FromBody] ChangeStatusRequest request)
         {
             var caseItem = CasesRepository.GetById(id);
             if (caseItem == null) return NotFound($"There is no element that match with the id {id}");
