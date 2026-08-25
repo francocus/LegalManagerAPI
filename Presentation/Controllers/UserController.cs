@@ -25,7 +25,7 @@ namespace Presentation.Controllers
             {
                 var client = new Client(request.Name, request.Dni, request.Email, request.Password, request.Phone);
                 UsersRepository.Add(client);
-                return CreatedAtAction(nameof(GetById), new { id = client.Id }, client);
+                return CreatedAtAction(nameof(GetById), new { id = client.Id }, ToResponse(client));
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
@@ -43,7 +43,7 @@ namespace Presentation.Controllers
             {
                 var lawyer = new Lawyer(request.Name, request.Dni, request.Email, request.Password, request.BarNumber);
                 UsersRepository.Add(lawyer);
-                return CreatedAtAction(nameof(GetById), new { id = lawyer.Id }, lawyer);
+                return CreatedAtAction(nameof(GetById), new { id = lawyer.Id }, ToResponse(lawyer));
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
@@ -61,17 +61,17 @@ namespace Presentation.Controllers
             {
                 var admin = new Admin(request.Name, request.Dni, request.Email, request.Password);
                 UsersRepository.Add(admin);
-                return CreatedAtAction(nameof(GetById), new { id = admin.Id }, admin);
+                return CreatedAtAction(nameof(GetById), new { id = admin.Id }, ToResponse(admin));
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
         [HttpGet]
-        public ActionResult<IReadOnlyList<User>> GetAll()
+        public ActionResult<IReadOnlyList<UserResponse>> GetAll()
         {
             var users = UsersRepository.GetAll();
             if (!users.Any()) return NotFound("No elements within the list");
-            return Ok(users);
+            return Ok(users.Select(ToResponse));
         }
 
         [HttpGet("clients")]
@@ -87,11 +87,11 @@ namespace Presentation.Controllers
             => Ok(UsersRepository.GetAll().OfType<Admin>().Select(ToResponse));
 
         [HttpGet("{id}")]
-        public ActionResult<User> GetById([FromRoute] int id)
+        public ActionResult<UserResponse> GetById([FromRoute] int id)
         {
             var user = UsersRepository.GetById(id);
             if (user == null) return NotFound($"There is no element that match with the id {id}");
-            return Ok(user);
+            return Ok(ToResponse(user));
         }
 
         [HttpPut("{id}")]
@@ -124,7 +124,7 @@ namespace Presentation.Controllers
                 return BadRequest("The specified user is not a client.");
 
             client.UpdatePhone(request.Phone);
-            return Ok(client);
+            return Ok(ToResponse(client));
         }
 
         [HttpPatch("lawyer/{id}/bar-number")]
@@ -139,7 +139,7 @@ namespace Presentation.Controllers
             try
             {
                 lawyer.UpdateBarNumber(request.BarNumber);
-                return Ok(lawyer);
+                return Ok(ToResponse(lawyer));
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
