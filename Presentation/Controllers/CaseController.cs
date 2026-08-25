@@ -20,7 +20,7 @@ namespace Presentation.Controllers
                 return BadRequest("El cliente indicado no es válido.");
 
             var lawyer = UsersRepository.GetById(request.LawyerId);
-            if (lawyer == null || lawyer.Role != "abogado")
+            if (lawyer is not Lawyer)
                 return BadRequest("El abogado indicado no es válido.");
 
             try
