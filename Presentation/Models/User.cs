@@ -5,7 +5,7 @@ namespace Presentation.Models
     [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
     [JsonDerivedType(typeof(Client), typeDiscriminator: "client")]
     [JsonDerivedType(typeof(Lawyer), typeDiscriminator: "lawyer")]
-    [JsonDerivedType(typeof(Sysadmin), typeDiscriminator: "sysadmin")]
+    [JsonDerivedType(typeof(Admin), typeDiscriminator: "admin")]
     public abstract class User
     {
         private static int nextId = 1;

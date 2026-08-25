@@ -1,5 +1,4 @@
-﻿// Presentation/DTOs/UpdateBarNumberRequest.cs
-namespace Presentation.DTOs
+﻿namespace Presentation.DTOs
 {
     public record UpdateBarNumberRequest(string BarNumber);
 }

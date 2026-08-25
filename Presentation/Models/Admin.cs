@@ -1,8 +1,8 @@
 ﻿namespace Presentation.Models
 {
-    public class Sysadmin : User
+    public class Admin : User
     {
-        public Sysadmin(string name, string dni, string email, string password)
+        public Admin(string name, string dni, string email, string password)
             : base(name, dni, email, password)
         {
         }

@@ -45,8 +45,8 @@ namespace Presentation.Controllers
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
-        [HttpPost("sysadmin")]
-        public ActionResult<Sysadmin> CreateSysadmin([FromBody] CreateSysadminRequest request)
+        [HttpPost("admin")]
+        public ActionResult<Admin> CreateAdmin([FromBody] CreateAdminRequest request)
         {
             if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
                 return Conflict("Ya existe un usuario con ese email.");
@@ -56,9 +56,9 @@ namespace Presentation.Controllers
 
             try
             {
-                var sysadmin = new Sysadmin(request.Name, request.Dni, request.Email, request.Password);
-                UsersRepository.Add(sysadmin);
-                return CreatedAtAction(nameof(GetById), new { id = sysadmin.Id }, sysadmin);
+                var admin = new Admin(request.Name, request.Dni, request.Email, request.Password);
+                UsersRepository.Add(admin);
+                return CreatedAtAction(nameof(GetById), new { id = admin.Id }, admin);
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
