@@ -13,7 +13,7 @@ namespace Presentation.Controllers
         private static UserResponse ToResponse(User user) => new(user.Id, user.Name, user.Dni, user.Email, user switch { Client => "client", Lawyer => "lawyer", Admin => "admin", _ => "unknown" });
 
         [HttpPost("client")]
-        public ActionResult<Client> CreateClient([FromBody] CreateClientRequest request)
+        public ActionResult<UserResponse> CreateClient([FromBody] CreateClientRequest request)
         {
             if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
                 return Conflict("Ya existe un usuario con ese email.");
@@ -31,7 +31,7 @@ namespace Presentation.Controllers
         }
 
         [HttpPost("lawyer")]
-        public ActionResult<Lawyer> CreateLawyer([FromBody] CreateLawyerRequest request)
+        public ActionResult<UserResponse> CreateLawyer([FromBody] CreateLawyerRequest request)
         {
             if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
                 return Conflict("Ya existe un usuario con ese email.");
@@ -49,7 +49,7 @@ namespace Presentation.Controllers
         }
 
         [HttpPost("admin")]
-        public ActionResult<Admin> CreateAdmin([FromBody] CreateAdminRequest request)
+        public ActionResult<UserResponse> CreateAdmin([FromBody] CreateAdminRequest request)
         {
             if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
                 return Conflict("Ya existe un usuario con ese email.");
@@ -115,7 +115,7 @@ namespace Presentation.Controllers
         }
 
         [HttpPatch("client/{id}/phone")]
-        public ActionResult<Client> UpdatePhone([FromRoute] int id, [FromBody] UpdatePhoneRequest request)
+        public ActionResult<UserResponse> UpdatePhone([FromRoute] int id, [FromBody] UpdatePhoneRequest request)
         {
             var user = UsersRepository.GetById(id);
             if (user == null) return NotFound($"There is no element that match with the id {id}");
@@ -128,7 +128,7 @@ namespace Presentation.Controllers
         }
 
         [HttpPatch("lawyer/{id}/bar-number")]
-        public ActionResult<Lawyer> UpdateBarNumber([FromRoute] int id, [FromBody] UpdateBarNumberRequest request)
+        public ActionResult<UserResponse> UpdateBarNumber([FromRoute] int id, [FromBody] UpdateBarNumberRequest request)
         {
             var user = UsersRepository.GetById(id);
             if (user == null) return NotFound($"There is no element that match with the id {id}");
