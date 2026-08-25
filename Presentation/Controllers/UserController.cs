@@ -93,6 +93,36 @@ namespace Presentation.Controllers
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
+        [HttpPatch("client/{id}/phone")]
+        public ActionResult<Client> UpdatePhone([FromRoute] int id, [FromBody] UpdatePhoneRequest request)
+        {
+            var user = UsersRepository.GetById(id);
+            if (user == null) return NotFound($"There is no element that match with the id {id}");
+
+            if (user is not Client client)
+                return BadRequest("The specified user is not a client.");
+
+            client.UpdatePhone(request.Phone);
+            return Ok(client);
+        }
+
+        [HttpPatch("lawyer/{id}/bar-number")]
+        public ActionResult<Lawyer> UpdateBarNumber([FromRoute] int id, [FromBody] UpdateBarNumberRequest request)
+        {
+            var user = UsersRepository.GetById(id);
+            if (user == null) return NotFound($"There is no element that match with the id {id}");
+
+            if (user is not Lawyer lawyer)
+                return BadRequest("The specified user is not a lawyer.");
+
+            try
+            {
+                lawyer.UpdateBarNumber(request.BarNumber);
+                return Ok(lawyer);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
         [HttpDelete("{id}")]
         public ActionResult Delete([FromRoute] int id)
         {

@@ -9,5 +9,10 @@
         {
             Phone = phone;
         }
+
+        public void UpdatePhone(string? phone)
+        {
+            Phone = phone;
+        }
     }
 }
