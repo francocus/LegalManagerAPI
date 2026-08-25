@@ -9,8 +9,8 @@ namespace Presentation.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        [HttpPost]
-        public ActionResult<User> Create([FromBody] CreateUserRequest request)
+        [HttpPost("client")]
+        public ActionResult<Client> CreateClient([FromBody] CreateClientRequest request)
         {
             if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
                 return Conflict("Ya existe un usuario con ese email.");
@@ -20,14 +20,47 @@ namespace Presentation.Controllers
 
             try
             {
-                var user = new User(request.Name, request.Dni, request.Email, request.Password, request.Role);
-                UsersRepository.Add(user);
-                return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
+                var client = new Client(request.Name, request.Dni, request.Email, request.Password, request.Phone);
+                UsersRepository.Add(client);
+                return CreatedAtAction(nameof(GetById), new { id = client.Id }, client);
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPost("lawyer")]
+        public ActionResult<Lawyer> CreateLawyer([FromBody] CreateLawyerRequest request)
+        {
+            if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
+                return Conflict("Ya existe un usuario con ese email.");
+
+            if (UsersRepository.GetAll().Any(u => u.Dni == request.Dni))
+                return Conflict("Ya existe un usuario con ese DNI.");
+
+            try
             {
-                return BadRequest(ex.Message);
+                var lawyer = new Lawyer(request.Name, request.Dni, request.Email, request.Password, request.BarNumber);
+                UsersRepository.Add(lawyer);
+                return CreatedAtAction(nameof(GetById), new { id = lawyer.Id }, lawyer);
             }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPost("sysadmin")]
+        public ActionResult<Sysadmin> CreateSysadmin([FromBody] CreateSysadminRequest request)
+        {
+            if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
+                return Conflict("Ya existe un usuario con ese email.");
+
+            if (UsersRepository.GetAll().Any(u => u.Dni == request.Dni))
+                return Conflict("Ya existe un usuario con ese DNI.");
+
+            try
+            {
+                var sysadmin = new Sysadmin(request.Name, request.Dni, request.Email, request.Password);
+                UsersRepository.Add(sysadmin);
+                return CreatedAtAction(nameof(GetById), new { id = sysadmin.Id }, sysadmin);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
         [HttpGet]
@@ -57,27 +90,7 @@ namespace Presentation.Controllers
                 user.UpdateDetails(request.Name, request.Dni, request.Email);
                 return Ok(user);
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpPatch("{id}/role")]
-        public ActionResult<User> AssignRole([FromRoute] int id, [FromBody] AssignRoleRequest request)
-        {
-            var user = UsersRepository.GetById(id);
-            if (user == null) return NotFound($"There is no element that match with the id {id}");
-
-            try
-            {
-                user.AssignRole(request.Role);
-                return Ok(user);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
         [HttpDelete("{id}")]
@@ -101,10 +114,7 @@ namespace Presentation.Controllers
                 user.Deactivate();
                 return NoContent();
             }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
+            catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
     }
 }

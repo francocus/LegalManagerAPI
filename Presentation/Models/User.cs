@@ -1,19 +1,23 @@
-﻿namespace Presentation.Models
+﻿using System.Text.Json.Serialization;
+
+namespace Presentation.Models
 {
-    public class User
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+    [JsonDerivedType(typeof(Client), typeDiscriminator: "client")]
+    [JsonDerivedType(typeof(Lawyer), typeDiscriminator: "lawyer")]
+    [JsonDerivedType(typeof(Sysadmin), typeDiscriminator: "sysadmin")]
+    public abstract class User
     {
         private static int nextId = 1;
-        private static readonly string[] ValidRoles = { "cliente", "abogado", "sysadmin" };
 
         public int Id { get; }
         public string Name { get; private set; }
         public string Dni { get; private set; }
         public string Email { get; private set; }
         public string Password { get; private set; }
-        public string Role { get; private set; }
         public bool Active { get; private set; }
 
-        public User(string name, string dni, string email, string password, string role)
+        protected User(string name, string dni, string email, string password)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Name is required.", nameof(name));
@@ -21,15 +25,11 @@
             if (string.IsNullOrWhiteSpace(email))
                 throw new ArgumentException("Email is required.", nameof(email));
 
-            if (!ValidRoles.Contains(role))
-                throw new ArgumentException($"Invalid role. Allowed values: {string.Join(", ", ValidRoles)}.", nameof(role));
-
             Id = nextId++;
             Name = name;
             Dni = dni;
             Email = email;
             Password = password;
-            Role = role;
             Active = true;
         }
 
@@ -41,14 +41,6 @@
             Name = name;
             Dni = dni;
             Email = email;
-        }
-
-        public void AssignRole(string role)
-        {
-            if (!ValidRoles.Contains(role))
-                throw new ArgumentException($"Invalid role. Allowed values: {string.Join(", ", ValidRoles)}.", nameof(role));
-
-            Role = role;
         }
 
         public void Deactivate()

@@ -14,11 +14,11 @@ namespace Presentation.Controllers
         public ActionResult<Appointment> Create([FromBody] CreateAppointmentRequest request)
         {
             var client = UsersRepository.GetById(request.ClientId);
-            if (client == null || client.Role != "cliente")
+            if (client is not Client)
                 return BadRequest("El cliente indicado no es válido.");
 
             var lawyer = UsersRepository.GetById(request.LawyerId);
-            if (lawyer == null || lawyer.Role != "abogado")
+            if (lawyer is not Lawyer)
                 return BadRequest("El abogado indicado no es válido.");
 
             if (request.CaseId.HasValue && CasesRepository.GetById(request.CaseId.Value) == null)

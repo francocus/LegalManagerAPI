@@ -16,7 +16,7 @@ namespace Presentation.Controllers
                 return Conflict("Ya existe un expediente con ese número.");
 
             var client = UsersRepository.GetById(request.ClientId);
-            if (client == null || client.Role != "cliente")
+            if (client is not Client)
                 return BadRequest("El cliente indicado no es válido.");
 
             var lawyer = UsersRepository.GetById(request.LawyerId);
@@ -100,7 +100,7 @@ namespace Presentation.Controllers
             if (caseItem == null) return NotFound($"There is no element that match with the id {id}");
 
             var lawyer = UsersRepository.GetById(request.LawyerId);
-            if (lawyer == null || lawyer.Role != "abogado")
+            if (lawyer is not Lawyer)
                 return BadRequest("El abogado indicado no es válido.");
 
             try
