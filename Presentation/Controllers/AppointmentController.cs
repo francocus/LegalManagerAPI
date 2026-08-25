@@ -47,6 +47,19 @@ namespace Presentation.Controllers
             return Ok(appointments);
         }
 
+        [HttpGet("availability")]
+        public ActionResult<AvailabilityResponse> GetAvailability([FromQuery] int lawyerId, [FromQuery] DateOnly date)
+        {
+            if (UsersRepository.GetById(lawyerId) is not Lawyer)
+                return BadRequest("El abogado indicado no es válido.");
+
+            var freeSlots = Appointment.ValidSlots
+                .Where(slot => !AppointmentsRepository.HasScheduleConflict(lawyerId, date, slot, slot))
+                .ToList();
+
+            return Ok(new AvailabilityResponse(freeSlots));
+        }
+
         [HttpGet("{id}")]
         public ActionResult<Appointment> GetById([FromRoute] int id)
         {

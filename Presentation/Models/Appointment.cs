@@ -3,7 +3,7 @@
     public class Appointment
     {
         private static int nextId = 1;
-        private static readonly string[] ValidSlots = { "09:00", "10:30", "12:00", "14:00", "15:30", "17:00" };
+        public static readonly string[] ValidSlots = { "09:00", "10:30", "12:00", "14:00", "15:30", "17:00" };
 
         public int Id { get; }
         public string Title { get; }
@@ -84,7 +84,7 @@
             Date = newDate;
             Time = newTime;
             EndTime = newEndTime;
-            Status = "pendiente"; // back to pending, requires reconfirmation
+            Status = "pendiente";
         }
 
         public void UpdateNotes(string? location, string? notes)

@@ -9,6 +9,9 @@ namespace Presentation.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
+
+        private static UserResponse ToResponse(User user) => new(user.Id, user.Name, user.Dni, user.Email, user switch { Client => "client", Lawyer => "lawyer", Admin => "admin", _ => "unknown" });
+
         [HttpPost("client")]
         public ActionResult<Client> CreateClient([FromBody] CreateClientRequest request)
         {
@@ -71,6 +74,18 @@ namespace Presentation.Controllers
             return Ok(users);
         }
 
+        [HttpGet("clients")]
+        public ActionResult<IReadOnlyList<UserResponse>> GetClients()
+    => Ok(UsersRepository.GetAll().OfType<Client>().Select(ToResponse));
+
+        [HttpGet("lawyers")]
+        public ActionResult<IReadOnlyList<UserResponse>> GetLawyers()
+            => Ok(UsersRepository.GetAll().OfType<Lawyer>().Select(ToResponse));
+
+        [HttpGet("admins")]
+        public ActionResult<IReadOnlyList<UserResponse>> GetAdmins()
+            => Ok(UsersRepository.GetAll().OfType<Admin>().Select(ToResponse));
+
         [HttpGet("{id}")]
         public ActionResult<User> GetById([FromRoute] int id)
         {
@@ -80,15 +95,21 @@ namespace Presentation.Controllers
         }
 
         [HttpPut("{id}")]
-        public ActionResult<User> Update([FromRoute] int id, [FromBody] UpdateUserRequest request)
+        public ActionResult<UserResponse> Update([FromRoute] int id, [FromBody] UpdateUserRequest request)
         {
             var user = UsersRepository.GetById(id);
             if (user == null) return NotFound($"There is no element that match with the id {id}");
 
+            if (UsersRepository.GetAll().Any(u => u.Id != id && u.Email == request.Email))
+                return Conflict("Ya existe un usuario con ese email.");
+
+            if (UsersRepository.GetAll().Any(u => u.Id != id && u.Dni == request.Dni))
+                return Conflict("Ya existe un usuario con ese DNI.");
+
             try
             {
                 user.UpdateDetails(request.Name, request.Dni, request.Email);
-                return Ok(user);
+                return Ok(ToResponse(user));
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
