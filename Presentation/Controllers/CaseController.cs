@@ -93,8 +93,8 @@ namespace Presentation.Controllers
             }
         }
 
-        [HttpPatch("{id}/lawyer")]
-        public ActionResult<Case> ReassignLawyer([FromRoute] int id, [FromBody] ReassignLawyerRequest request)
+        [HttpPatch("{id}/lawyers/add")]
+        public ActionResult<Case> AddLawyer([FromRoute] int id, [FromBody] AddLawyerRequest request)
         {
             var caseItem = CasesRepository.GetById(id);
             if (caseItem == null) return NotFound($"There is no element that match with the id {id}");
@@ -105,12 +105,27 @@ namespace Presentation.Controllers
 
             try
             {
-                caseItem.ReassignLawyer(request.LawyerId);
+                caseItem.AddLawyer(request.LawyerId);
                 return Ok(caseItem);
             }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
             catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
+
+        [HttpPatch("{id}/lawyers/remove")]
+        public ActionResult<Case> RemoveLawyer([FromRoute] int id, [FromBody] RemoveLawyerRequest request)
+        {
+            var caseItem = CasesRepository.GetById(id);
+            if (caseItem == null) return NotFound($"There is no element that match with the id {id}");
+
+            try
+            {
+                caseItem.RemoveLawyer(request.LawyerId);
+                return Ok(caseItem);
+            }
+            catch (InvalidOperationException ex) { return Conflict(ex.Message); }
+        }
+
+
 
         [HttpDelete("{id}")]
         public ActionResult Delete([FromRoute] int id)

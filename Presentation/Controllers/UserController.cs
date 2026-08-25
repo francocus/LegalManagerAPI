@@ -41,7 +41,7 @@ namespace Presentation.Controllers
 
             try
             {
-                var lawyer = new Lawyer(request.Name, request.Dni, request.Email, request.Password, request.BarNumber);
+                var lawyer = new Lawyer(request.Name, request.Dni, request.Email, request.Password, request.BarNumber, request.Specialties);
                 UsersRepository.Add(lawyer);
                 return CreatedAtAction(nameof(GetById), new { id = lawyer.Id }, ToResponse(lawyer));
             }
@@ -144,6 +144,23 @@ namespace Presentation.Controllers
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
+        [HttpPatch("lawyer/{id}/specialties")]
+        public ActionResult<UserResponse> UpdateSpecialties([FromRoute] int id, [FromBody] UpdateSpecialtiesRequest request)
+        {
+            var user = UsersRepository.GetById(id);
+            if (user == null) return NotFound($"There is no element that match with the id {id}");
+
+            if (user is not Lawyer lawyer)
+                return BadRequest("The specified user is not a lawyer.");
+
+            try
+            {
+                lawyer.UpdateSpecialties(request.Specialties);
+                return Ok(ToResponse(lawyer));
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
         [HttpDelete("{id}")]
         public ActionResult Delete([FromRoute] int id)
         {
@@ -151,7 +168,7 @@ namespace Presentation.Controllers
             if (user == null) return NotFound($"There is no element that match with the id {id}");
 
             var hasActiveCases = CasesRepository.GetAll()
-                .Any(c => (c.ClientId == id || c.LawyerId == id) && c.Status != "cerrado");
+                .Any(c => (c.ClientId == id || c.LawyerIds.Contains(id)) && c.Status != "cerrado");
 
             var hasActiveAppointments = AppointmentsRepository.GetAll()
                 .Any(a => (a.ClientId == id || a.LawyerId == id)

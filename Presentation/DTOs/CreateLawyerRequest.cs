@@ -1,4 +1,1 @@
-﻿namespace Presentation.DTOs
-{
-    public record CreateLawyerRequest(string Name, string Dni, string Email, string Password, string BarNumber);
-}
+﻿public record CreateLawyerRequest(string Name, string Dni, string Email, string Password, string BarNumber, List<string>? Specialties);
