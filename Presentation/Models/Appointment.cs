@@ -3,18 +3,21 @@
     public class Appointment
     {
         private static int nextId = 1;
-        public static readonly string[] ValidSlots = { "09:00", "10:30", "12:00", "14:00", "15:30", "17:00" };
+        public static readonly TimeOnly[] ValidSlots =
+        {
+            new(9, 0), new(10, 30), new(12, 0), new(14, 0), new(15, 30), new(17, 0)
+        };
 
         public int Id { get; }
         public string Title { get; }
         public DateOnly Date { get; private set; }
-        public string Time { get; private set; }
-        public string EndTime { get; private set; }
+        public TimeOnly Time { get; private set; }
+        public TimeOnly EndTime { get; private set; }
         public string Reason { get; }
-        public string Status { get; private set; }
-        public string EffectiveStatus =>
-            Status == "confirmado" && Date.ToDateTime(TimeOnly.Parse(Time)) < DateTime.Now
-                ? "finalizado"
+        public AppointmentStatus Status { get; private set; }
+        public AppointmentStatus EffectiveStatus =>
+            Status == AppointmentStatus.Confirmado && Date.ToDateTime(Time) < DateTime.Now
+                ? AppointmentStatus.Finalizado
                 : Status;
         public string? Area { get; }
         public string? Location { get; private set; }
@@ -24,7 +27,7 @@
         public int? CaseId { get; }
         public bool Active { get; private set; }
 
-        public Appointment(string title, DateOnly date, string time, string endTime, string reason, string? area, string? location, string? notes, int clientId, int lawyerId, int? caseId)
+        public Appointment(string title, DateOnly date, TimeOnly time, TimeOnly endTime, string reason, string? area, string? location, string? notes, int clientId, int lawyerId, int? caseId)
         {
             if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("El título es obligatorio.", nameof(title));
@@ -44,7 +47,7 @@
             Time = time;
             EndTime = endTime;
             Reason = reason;
-            Status = "pendiente";
+            Status = AppointmentStatus.Pendiente;
             Area = area;
             Location = location;
             Notes = notes;
@@ -56,26 +59,26 @@
 
         public void Confirm()
         {
-            if (Status == "cancelado")
+            if (Status == AppointmentStatus.Cancelado)
                 throw new InvalidOperationException("No se puede confirmar un turno cancelado.");
 
-            if (Status == "confirmado")
+            if (Status == AppointmentStatus.Confirmado)
                 throw new InvalidOperationException("El turno ya está confirmado.");
 
-            Status = "confirmado";
+            Status = AppointmentStatus.Confirmado;
         }
 
         public void Cancel()
         {
-            if (Status == "cancelado")
+            if (Status == AppointmentStatus.Cancelado)
                 throw new InvalidOperationException("El turno ya está cancelado.");
 
-            Status = "cancelado";
+            Status = AppointmentStatus.Cancelado;
         }
 
-        public void Reschedule(DateOnly newDate, string newTime, string newEndTime)
+        public void Reschedule(DateOnly newDate, TimeOnly newTime, TimeOnly newEndTime)
         {
-            if (Status == "cancelado")
+            if (Status == AppointmentStatus.Cancelado)
                 throw new InvalidOperationException("No se puede reprogramar un turno cancelado.");
 
             if (!ValidSlots.Contains(newTime))
@@ -84,7 +87,7 @@
             Date = newDate;
             Time = newTime;
             EndTime = newEndTime;
-            Status = "pendiente";
+            Status = AppointmentStatus.Pendiente;
         }
 
         public void UpdateNotes(string? location, string? notes)
@@ -101,8 +104,7 @@
             Active = false;
         }
 
-        public bool OverlapsWith(DateOnly date, string time, string endTime)
-            => Active && EffectiveStatus == "confirmado" && Date == date && Time == time;
-
+        public bool OverlapsWith(DateOnly date, TimeOnly time, TimeOnly endTime)
+            => Active && Status != AppointmentStatus.Cancelado && Date == date && Time == time;
     }
 }

@@ -14,15 +14,18 @@ namespace Presentation.Controllers
         {
             var phone = user switch { Client c => c.Phone, Lawyer l => l.Phone, _ => null };
             var address = (user as Client)?.Address;
-            return new(user.Id, user.FirstName, user.LastName, user.Dni, user.Email, user switch { Client => "client", Lawyer => "lawyer", Admin => "admin", _ => "unknown" }, phone, address);
+            return new(user.Id, user.FirstName, user.LastName, user.Dni, user.Email, user.RegistrationDate, user switch { Client => "client", Lawyer => "lawyer", Admin => "admin", _ => "unknown" }, phone, address);
         }
 
         private ActionResult? ValidateUnique(string email, string dni, int? excludeId = null)
         {
-            if (UsersRepository.GetAll().Any(u => u.Id != excludeId && u.Email == email))
+            var users = UsersRepository.GetAll();
+            var normalizedEmail = email?.Trim();
+
+            if (users.Any(u => u.Id != excludeId && string.Equals(u.Email.Trim(), normalizedEmail, StringComparison.OrdinalIgnoreCase)))
                 return Conflict("Ya existe un usuario con ese email.");
 
-            if (UsersRepository.GetAll().Any(u => u.Id != excludeId && u.Dni == dni))
+            if (users.Any(u => u.Id != excludeId && u.Dni == dni))
                 return Conflict("Ya existe un usuario con ese DNI.");
 
             return null;
@@ -78,20 +81,20 @@ namespace Presentation.Controllers
         {
             var users = UsersRepository.GetAll();
             if (!users.Any()) return NotFound("No hay elementos en la lista.");
-            return Ok(users.Select(ToResponse));
+            return Ok(users.Select(ToResponse).ToList());
         }
 
         [HttpGet("clients")]
         public ActionResult<IReadOnlyList<UserResponse>> GetClients()
-    => Ok(UsersRepository.GetAll().OfType<Client>().Select(ToResponse));
+            => Ok(UsersRepository.GetAll().OfType<Client>().Select(ToResponse).ToList());
 
         [HttpGet("lawyers")]
         public ActionResult<IReadOnlyList<UserResponse>> GetLawyers()
-            => Ok(UsersRepository.GetAll().OfType<Lawyer>().Select(ToResponse));
+            => Ok(UsersRepository.GetAll().OfType<Lawyer>().Select(ToResponse).ToList());
 
         [HttpGet("admins")]
         public ActionResult<IReadOnlyList<UserResponse>> GetAdmins()
-            => Ok(UsersRepository.GetAll().OfType<Admin>().Select(ToResponse));
+            => Ok(UsersRepository.GetAll().OfType<Admin>().Select(ToResponse).ToList());
 
         [HttpGet("{id}")]
         public ActionResult<UserResponse> GetById([FromRoute] int id)
@@ -198,11 +201,11 @@ namespace Presentation.Controllers
             if (user == null) return NotFound($"No existe un elemento con el id {id}.");
 
             var hasActiveCases = CasesRepository.GetAll()
-                .Any(c => (c.ClientId == id || c.LawyerIds.Contains(id)) && c.Status != "cerrado");
+                .Any(c => (c.ClientId == id || c.LawyerIds.Contains(id)) && c.Status != CaseStatus.Cerrado);
 
             var hasActiveAppointments = AppointmentsRepository.GetAll()
                 .Any(a => (a.ClientId == id || a.LawyerId == id)
-                    && a.EffectiveStatus != "cancelado" && a.EffectiveStatus != "finalizado");
+                    && a.EffectiveStatus != AppointmentStatus.Cancelado && a.EffectiveStatus != AppointmentStatus.Finalizado);
 
             if (hasActiveCases || hasActiveAppointments)
                 return Conflict($"El usuario con id {id} tiene expedientes o turnos activos y no puede ser desactivado.");

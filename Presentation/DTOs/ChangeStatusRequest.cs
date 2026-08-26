@@ -1,4 +1,6 @@
-﻿namespace Presentation.DTOs
+﻿using Presentation.Models;
+
+namespace Presentation.DTOs
 {
-    public record ChangeStatusRequest(string Status);
+    public record ChangeStatusRequest(CaseStatus Status);
 }

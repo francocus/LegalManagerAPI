@@ -24,15 +24,21 @@ namespace Presentation.Controllers
             if (lawyer is not Lawyer)
                 return BadRequest("El abogado indicado no es válido.");
 
-            if (request.CaseId.HasValue && CasesRepository.GetById(request.CaseId.Value) == null)
-                return BadRequest("El expediente indicado no existe.");
+            Case? relatedCase = null;
+            if (request.CaseId.HasValue)
+            {
+                relatedCase = CasesRepository.GetById(request.CaseId.Value);
+                if (relatedCase == null)
+                    return BadRequest("El expediente indicado no existe.");
+            }
 
             if (AppointmentsRepository.HasScheduleConflict(request.LawyerId, request.Date, request.Time, request.EndTime))
                 return Conflict("El abogado ya tiene un turno en ese horario.");
 
             try
             {
-                var appointment = new Appointment(request.Title, request.Date, request.Time, request.EndTime, request.Reason, request.Area, request.Location, request.Notes, request.ClientId, request.LawyerId, request.CaseId);
+                var area = relatedCase != null ? relatedCase.Area : request.Area;
+                var appointment = new Appointment(request.Title, request.Date, request.Time, request.EndTime, request.Reason, area, request.Location, request.Notes, request.ClientId, request.LawyerId, request.CaseId);
                 AppointmentsRepository.Add(appointment);
                 return CreatedAtAction(nameof(GetById), new { id = appointment.Id }, ToResponse(appointment));
             }

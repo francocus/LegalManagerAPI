@@ -12,7 +12,7 @@ namespace Presentation.Controllers
         private static CaseResponse ToResponse(Case c) => new(
             c.Id, c.CaseNumber, c.Title, c.Area, c.Status,
             c.StartDate, c.LastUpdate, c.ClosingDate,
-            c.Description, c.Notes, c.ClientId, c.LawyerIds, c.Active);
+            c.Description, c.Notes, c.ClientId, c.CreatedByUserId, c.LawyerIds, c.Active);
 
         [HttpPost]
         public ActionResult<CaseResponse> Create([FromBody] CreateCaseRequest request)
@@ -28,9 +28,13 @@ namespace Presentation.Controllers
             if (lawyer is not Lawyer)
                 return BadRequest("El abogado indicado no es válido.");
 
+            var createdBy = UsersRepository.GetById(request.CreatedByUserId);
+            if (createdBy is not Lawyer && createdBy is not Admin)
+                return BadRequest("El expediente solo puede ser creado por un abogado o un administrador.");
+
             try
             {
-                var caseItem = new Case(request.CaseNumber, request.Title, request.Area, request.StartDate, request.Description, request.Notes, request.ClientId, request.LawyerId);
+                var caseItem = new Case(request.CaseNumber, request.Title, request.Area, request.StartDate, request.Description, request.Notes, request.ClientId, request.LawyerId, request.CreatedByUserId);
                 CasesRepository.Add(caseItem);
                 return CreatedAtAction(nameof(GetById), new { id = caseItem.Id }, ToResponse(caseItem));
             }
@@ -110,6 +114,10 @@ namespace Presentation.Controllers
             var caseItem = CasesRepository.GetById(id);
             if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
 
+            var lawyer = UsersRepository.GetById(request.LawyerId);
+            if (lawyer is not Lawyer)
+                return BadRequest("El abogado indicado no es válido.");
+
             try
             {
                 caseItem.RemoveLawyer(request.LawyerId);
@@ -125,8 +133,8 @@ namespace Presentation.Controllers
             if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
 
             var hasActiveAppointments = AppointmentsRepository.GetAll()
-                .Any(a => a.CaseId == id
-                    && a.EffectiveStatus != "cancelado" && a.EffectiveStatus != "finalizado");
+.Any(a => a.CaseId == id
+    && a.EffectiveStatus != AppointmentStatus.Cancelado && a.EffectiveStatus != AppointmentStatus.Finalizado);
 
             if (hasActiveAppointments)
                 return Conflict($"El expediente con id {id} tiene turnos activos asociados.");

@@ -1,4 +1,4 @@
 ﻿namespace Presentation.DTOs
 {
-    public record AvailabilityResponse(IReadOnlyList<string> Slots);
+    public record AvailabilityResponse(IReadOnlyList<TimeOnly> Slots);
 }

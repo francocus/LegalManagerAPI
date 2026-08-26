@@ -1,4 +1,4 @@
 ﻿namespace Presentation.DTOs
 {
-    public record RescheduleAppointmentRequest(DateOnly Date, string Time, string EndTime);
+    public record RescheduleAppointmentRequest(DateOnly Date, TimeOnly Time, TimeOnly EndTime);
 }

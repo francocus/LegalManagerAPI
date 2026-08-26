@@ -14,7 +14,7 @@ namespace Presentation.Data
         public static Appointment? GetById(int id)
             => appointments.FirstOrDefault(a => a.Id == id && a.Active);
 
-        public static bool HasScheduleConflict(int lawyerId, DateOnly date, string time, string endTime)
-            => appointments.Any(a => a.LawyerId == lawyerId && a.OverlapsWith(date, time, endTime));
+        public static bool HasScheduleConflict(int lawyerId, DateOnly date, TimeOnly time, TimeOnly endTime)
+                    => appointments.Any(a => a.LawyerId == lawyerId && a.OverlapsWith(date, time, endTime));
     }
 }

@@ -16,6 +16,7 @@ namespace Presentation.Models
         public string Dni { get; private set; }
         public string Email { get; private set; }
         public string Password { get; private set; }
+        public DateOnly RegistrationDate { get; }
         public bool Active { get; private set; }
 
         protected User(string firstName, string lastName, string dni, string email, string password)
@@ -35,6 +36,7 @@ namespace Presentation.Models
             Dni = dni;
             Email = email;
             Password = password;
+            RegistrationDate = DateOnly.FromDateTime(DateTime.Now);
             Active = true;
         }
 
@@ -45,6 +47,9 @@ namespace Presentation.Models
 
             if (string.IsNullOrWhiteSpace(lastName))
                 throw new ArgumentException("El apellido es obligatorio.", nameof(lastName));
+
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("El email es obligatorio.", nameof(email));
 
             FirstName = firstName;
             LastName = lastName;
