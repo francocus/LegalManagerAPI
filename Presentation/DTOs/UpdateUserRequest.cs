@@ -1,4 +1,4 @@
 ﻿namespace Presentation.DTOs
 {
-    public record UpdateUserRequest(string Name, string Dni, string Email);
+    public record UpdateUserRequest(string FirstName, string LastName, string Dni, string Email);
 }

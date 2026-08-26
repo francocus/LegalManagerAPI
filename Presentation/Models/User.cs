@@ -11,34 +11,43 @@ namespace Presentation.Models
         private static int nextId = 1;
 
         public int Id { get; }
-        public string Name { get; private set; }
+        public string FirstName { get; private set; }
+        public string LastName { get; private set; }
         public string Dni { get; private set; }
         public string Email { get; private set; }
         public string Password { get; private set; }
         public bool Active { get; private set; }
 
-        protected User(string name, string dni, string email, string password)
+        protected User(string firstName, string lastName, string dni, string email, string password)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Name is required.", nameof(name));
+            if (string.IsNullOrWhiteSpace(firstName))
+                throw new ArgumentException("El nombre es obligatorio.", nameof(firstName));
+
+            if (string.IsNullOrWhiteSpace(lastName))
+                throw new ArgumentException("El apellido es obligatorio.", nameof(lastName));
 
             if (string.IsNullOrWhiteSpace(email))
-                throw new ArgumentException("Email is required.", nameof(email));
+                throw new ArgumentException("El email es obligatorio.", nameof(email));
 
             Id = nextId++;
-            Name = name;
+            FirstName = firstName;
+            LastName = lastName;
             Dni = dni;
             Email = email;
             Password = password;
             Active = true;
         }
 
-        public void UpdateDetails(string name, string dni, string email)
+        public void UpdateDetails(string firstName, string lastName, string dni, string email)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Name is required.", nameof(name));
+            if (string.IsNullOrWhiteSpace(firstName))
+                throw new ArgumentException("El nombre es obligatorio.", nameof(firstName));
 
-            Name = name;
+            if (string.IsNullOrWhiteSpace(lastName))
+                throw new ArgumentException("El apellido es obligatorio.", nameof(lastName));
+
+            FirstName = firstName;
+            LastName = lastName;
             Dni = dni;
             Email = email;
         }
@@ -46,7 +55,7 @@ namespace Presentation.Models
         public void Deactivate()
         {
             if (!Active)
-                throw new InvalidOperationException("The user is already inactive.");
+                throw new InvalidOperationException("El usuario ya está inactivo.");
 
             Active = false;
         }

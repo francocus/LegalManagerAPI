@@ -27,16 +27,16 @@
         public Appointment(string title, DateOnly date, string time, string endTime, string reason, string? area, string? location, string? notes, int clientId, int lawyerId, int? caseId)
         {
             if (string.IsNullOrWhiteSpace(title))
-                throw new ArgumentException("Title is required.", nameof(title));
+                throw new ArgumentException("El título es obligatorio.", nameof(title));
 
             if (clientId <= 0)
-                throw new ArgumentException("The appointment needs a client assigned.", nameof(clientId));
+                throw new ArgumentException("El turno necesita un cliente asignado.", nameof(clientId));
 
             if (lawyerId <= 0)
-                throw new ArgumentException("The appointment needs a lawyer assigned.", nameof(lawyerId));
+                throw new ArgumentException("El turno necesita un abogado asignado.", nameof(lawyerId));
 
             if (!ValidSlots.Contains(time))
-                throw new ArgumentException($"Invalid time slot. Allowed values: {string.Join(", ", ValidSlots)}.", nameof(time));
+                throw new ArgumentException($"Horario inválido. Valores permitidos: {string.Join(", ", ValidSlots)}.", nameof(time));
 
             Id = nextId++;
             Title = title;
@@ -57,10 +57,10 @@
         public void Confirm()
         {
             if (Status == "cancelado")
-                throw new InvalidOperationException("Cannot confirm a cancelled appointment.");
+                throw new InvalidOperationException("No se puede confirmar un turno cancelado.");
 
             if (Status == "confirmado")
-                throw new InvalidOperationException("The appointment is already confirmed.");
+                throw new InvalidOperationException("El turno ya está confirmado.");
 
             Status = "confirmado";
         }
@@ -68,7 +68,7 @@
         public void Cancel()
         {
             if (Status == "cancelado")
-                throw new InvalidOperationException("The appointment is already cancelled.");
+                throw new InvalidOperationException("El turno ya está cancelado.");
 
             Status = "cancelado";
         }
@@ -76,10 +76,10 @@
         public void Reschedule(DateOnly newDate, string newTime, string newEndTime)
         {
             if (Status == "cancelado")
-                throw new InvalidOperationException("Cannot reschedule a cancelled appointment.");
+                throw new InvalidOperationException("No se puede reprogramar un turno cancelado.");
 
             if (!ValidSlots.Contains(newTime))
-                throw new ArgumentException($"Invalid time slot. Allowed values: {string.Join(", ", ValidSlots)}.", nameof(newTime));
+                throw new ArgumentException($"Horario inválido. Valores permitidos: {string.Join(", ", ValidSlots)}.", nameof(newTime));
 
             Date = newDate;
             Time = newTime;
@@ -96,7 +96,7 @@
         public void Deactivate()
         {
             if (!Active)
-                throw new InvalidOperationException("The appointment is already inactive.");
+                throw new InvalidOperationException("El turno ya está inactivo.");
 
             Active = false;
         }

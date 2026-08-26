@@ -10,20 +10,33 @@ namespace Presentation.Controllers
     public class UserController : ControllerBase
     {
 
-        private static UserResponse ToResponse(User user) => new(user.Id, user.Name, user.Dni, user.Email, user switch { Client => "client", Lawyer => "lawyer", Admin => "admin", _ => "unknown" });
+        private static UserResponse ToResponse(User user)
+        {
+            var phone = user switch { Client c => c.Phone, Lawyer l => l.Phone, _ => null };
+            var address = (user as Client)?.Address;
+            return new(user.Id, user.FirstName, user.LastName, user.Dni, user.Email, user switch { Client => "client", Lawyer => "lawyer", Admin => "admin", _ => "unknown" }, phone, address);
+        }
+
+        private ActionResult? ValidateUnique(string email, string dni, int? excludeId = null)
+        {
+            if (UsersRepository.GetAll().Any(u => u.Id != excludeId && u.Email == email))
+                return Conflict("Ya existe un usuario con ese email.");
+
+            if (UsersRepository.GetAll().Any(u => u.Id != excludeId && u.Dni == dni))
+                return Conflict("Ya existe un usuario con ese DNI.");
+
+            return null;
+        }
 
         [HttpPost("client")]
         public ActionResult<UserResponse> CreateClient([FromBody] CreateClientRequest request)
         {
-            if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
-                return Conflict("Ya existe un usuario con ese email.");
-
-            if (UsersRepository.GetAll().Any(u => u.Dni == request.Dni))
-                return Conflict("Ya existe un usuario con ese DNI.");
+            var duplicate = ValidateUnique(request.Email, request.Dni);
+            if (duplicate != null) return duplicate;
 
             try
             {
-                var client = new Client(request.Name, request.Dni, request.Email, request.Password, request.Phone);
+                var client = new Client(request.FirstName, request.LastName, request.Dni, request.Email, request.Password, request.Phone, request.Address);
                 UsersRepository.Add(client);
                 return CreatedAtAction(nameof(GetById), new { id = client.Id }, ToResponse(client));
             }
@@ -33,15 +46,12 @@ namespace Presentation.Controllers
         [HttpPost("lawyer")]
         public ActionResult<UserResponse> CreateLawyer([FromBody] CreateLawyerRequest request)
         {
-            if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
-                return Conflict("Ya existe un usuario con ese email.");
-
-            if (UsersRepository.GetAll().Any(u => u.Dni == request.Dni))
-                return Conflict("Ya existe un usuario con ese DNI.");
+            var duplicate = ValidateUnique(request.Email, request.Dni);
+            if (duplicate != null) return duplicate;
 
             try
             {
-                var lawyer = new Lawyer(request.Name, request.Dni, request.Email, request.Password, request.BarNumber, request.Specialties);
+                var lawyer = new Lawyer(request.FirstName, request.LastName, request.Dni, request.Email, request.Password, request.BarNumber, request.Phone, request.Specialties);
                 UsersRepository.Add(lawyer);
                 return CreatedAtAction(nameof(GetById), new { id = lawyer.Id }, ToResponse(lawyer));
             }
@@ -51,15 +61,12 @@ namespace Presentation.Controllers
         [HttpPost("admin")]
         public ActionResult<UserResponse> CreateAdmin([FromBody] CreateAdminRequest request)
         {
-            if (UsersRepository.GetAll().Any(u => u.Email == request.Email))
-                return Conflict("Ya existe un usuario con ese email.");
-
-            if (UsersRepository.GetAll().Any(u => u.Dni == request.Dni))
-                return Conflict("Ya existe un usuario con ese DNI.");
+            var duplicate = ValidateUnique(request.Email, request.Dni);
+            if (duplicate != null) return duplicate;
 
             try
             {
-                var admin = new Admin(request.Name, request.Dni, request.Email, request.Password);
+                var admin = new Admin(request.FirstName, request.LastName, request.Dni, request.Email, request.Password);
                 UsersRepository.Add(admin);
                 return CreatedAtAction(nameof(GetById), new { id = admin.Id }, ToResponse(admin));
             }
@@ -70,7 +77,7 @@ namespace Presentation.Controllers
         public ActionResult<IReadOnlyList<UserResponse>> GetAll()
         {
             var users = UsersRepository.GetAll();
-            if (!users.Any()) return NotFound("No elements within the list");
+            if (!users.Any()) return NotFound("No hay elementos en la lista.");
             return Ok(users.Select(ToResponse));
         }
 
@@ -90,7 +97,7 @@ namespace Presentation.Controllers
         public ActionResult<UserResponse> GetById([FromRoute] int id)
         {
             var user = UsersRepository.GetById(id);
-            if (user == null) return NotFound($"There is no element that match with the id {id}");
+            if (user == null) return NotFound($"No existe un elemento con el id {id}.");
             return Ok(ToResponse(user));
         }
 
@@ -98,17 +105,14 @@ namespace Presentation.Controllers
         public ActionResult<UserResponse> Update([FromRoute] int id, [FromBody] UpdateUserRequest request)
         {
             var user = UsersRepository.GetById(id);
-            if (user == null) return NotFound($"There is no element that match with the id {id}");
+            if (user == null) return NotFound($"No existe un elemento con el id {id}.");
 
-            if (UsersRepository.GetAll().Any(u => u.Id != id && u.Email == request.Email))
-                return Conflict("Ya existe un usuario con ese email.");
-
-            if (UsersRepository.GetAll().Any(u => u.Id != id && u.Dni == request.Dni))
-                return Conflict("Ya existe un usuario con ese DNI.");
+            var duplicate = ValidateUnique(request.Email, request.Dni, id);
+            if (duplicate != null) return duplicate;
 
             try
             {
-                user.UpdateDetails(request.Name, request.Dni, request.Email);
+                user.UpdateDetails(request.FirstName, request.LastName, request.Dni, request.Email);
                 return Ok(ToResponse(user));
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
@@ -118,12 +122,38 @@ namespace Presentation.Controllers
         public ActionResult<UserResponse> UpdatePhone([FromRoute] int id, [FromBody] UpdatePhoneRequest request)
         {
             var user = UsersRepository.GetById(id);
-            if (user == null) return NotFound($"There is no element that match with the id {id}");
+            if (user == null) return NotFound($"No existe un elemento con el id {id}.");
 
             if (user is not Client client)
-                return BadRequest("The specified user is not a client.");
+                return BadRequest("El usuario indicado no es un cliente.");
 
             client.UpdatePhone(request.Phone);
+            return Ok(ToResponse(client));
+        }
+
+        [HttpPatch("lawyer/{id}/phone")]
+        public ActionResult<UserResponse> UpdateLawyerPhone([FromRoute] int id, [FromBody] UpdatePhoneRequest request)
+        {
+            var user = UsersRepository.GetById(id);
+            if (user == null) return NotFound($"No existe un elemento con el id {id}.");
+
+            if (user is not Lawyer lawyer)
+                return BadRequest("El usuario indicado no es un abogado.");
+
+            lawyer.UpdatePhone(request.Phone);
+            return Ok(ToResponse(lawyer));
+        }
+
+        [HttpPatch("client/{id}/address")]
+        public ActionResult<UserResponse> UpdateAddress([FromRoute] int id, [FromBody] UpdateAddressRequest request)
+        {
+            var user = UsersRepository.GetById(id);
+            if (user == null) return NotFound($"No existe un elemento con el id {id}.");
+
+            if (user is not Client client)
+                return BadRequest("El usuario indicado no es un cliente.");
+
+            client.UpdateAddress(request.Address);
             return Ok(ToResponse(client));
         }
 
@@ -131,10 +161,10 @@ namespace Presentation.Controllers
         public ActionResult<UserResponse> UpdateBarNumber([FromRoute] int id, [FromBody] UpdateBarNumberRequest request)
         {
             var user = UsersRepository.GetById(id);
-            if (user == null) return NotFound($"There is no element that match with the id {id}");
+            if (user == null) return NotFound($"No existe un elemento con el id {id}.");
 
             if (user is not Lawyer lawyer)
-                return BadRequest("The specified user is not a lawyer.");
+                return BadRequest("El usuario indicado no es un abogado.");
 
             try
             {
@@ -148,10 +178,10 @@ namespace Presentation.Controllers
         public ActionResult<UserResponse> UpdateSpecialties([FromRoute] int id, [FromBody] UpdateSpecialtiesRequest request)
         {
             var user = UsersRepository.GetById(id);
-            if (user == null) return NotFound($"There is no element that match with the id {id}");
+            if (user == null) return NotFound($"No existe un elemento con el id {id}.");
 
             if (user is not Lawyer lawyer)
-                return BadRequest("The specified user is not a lawyer.");
+                return BadRequest("El usuario indicado no es un abogado.");
 
             try
             {
@@ -165,7 +195,7 @@ namespace Presentation.Controllers
         public ActionResult Delete([FromRoute] int id)
         {
             var user = UsersRepository.GetById(id);
-            if (user == null) return NotFound($"There is no element that match with the id {id}");
+            if (user == null) return NotFound($"No existe un elemento con el id {id}.");
 
             var hasActiveCases = CasesRepository.GetAll()
                 .Any(c => (c.ClientId == id || c.LawyerIds.Contains(id)) && c.Status != "cerrado");
@@ -175,7 +205,7 @@ namespace Presentation.Controllers
                     && a.EffectiveStatus != "cancelado" && a.EffectiveStatus != "finalizado");
 
             if (hasActiveCases || hasActiveAppointments)
-                return Conflict($"The user with id {id} has active cases or appointments and cannot be deactivated.");
+                return Conflict($"El usuario con id {id} tiene expedientes o turnos activos y no puede ser desactivado.");
 
             try
             {

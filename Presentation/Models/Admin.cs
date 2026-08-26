@@ -2,8 +2,8 @@
 {
     public class Admin : User
     {
-        public Admin(string name, string dni, string email, string password)
-            : base(name, dni, email, password)
+        public Admin(string firstName, string lastName, string dni, string email, string password)
+            : base(firstName, lastName, dni, email, password)
         {
         }
     }

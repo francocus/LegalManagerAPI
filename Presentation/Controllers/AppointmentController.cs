@@ -9,9 +9,12 @@ namespace Presentation.Controllers
     [ApiController]
     public class AppointmentController : ControllerBase
     {
+        private static AppointmentResponse ToResponse(Appointment a) => new(
+            a.Id, a.Title, a.Date, a.Time, a.EndTime, a.Reason, a.Status, a.EffectiveStatus,
+            a.Area, a.Location, a.Notes, a.ClientId, a.LawyerId, a.CaseId, a.Active);
 
         [HttpPost]
-        public ActionResult<Appointment> Create([FromBody] CreateAppointmentRequest request)
+        public ActionResult<AppointmentResponse> Create([FromBody] CreateAppointmentRequest request)
         {
             var client = UsersRepository.GetById(request.ClientId);
             if (client is not Client)
@@ -25,13 +28,13 @@ namespace Presentation.Controllers
                 return BadRequest("El expediente indicado no existe.");
 
             if (AppointmentsRepository.HasScheduleConflict(request.LawyerId, request.Date, request.Time, request.EndTime))
-                return Conflict("The lawyer already has an appointment at that time.");
+                return Conflict("El abogado ya tiene un turno en ese horario.");
 
             try
             {
                 var appointment = new Appointment(request.Title, request.Date, request.Time, request.EndTime, request.Reason, request.Area, request.Location, request.Notes, request.ClientId, request.LawyerId, request.CaseId);
                 AppointmentsRepository.Add(appointment);
-                return CreatedAtAction(nameof(GetById), new { id = appointment.Id }, appointment);
+                return CreatedAtAction(nameof(GetById), new { id = appointment.Id }, ToResponse(appointment));
             }
             catch (ArgumentException ex)
             {
@@ -40,11 +43,11 @@ namespace Presentation.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IReadOnlyList<Appointment>> GetAll()
+        public ActionResult<IReadOnlyList<AppointmentResponse>> GetAll()
         {
             var appointments = AppointmentsRepository.GetAll();
-            if (!appointments.Any()) return NotFound("No elements within the list");
-            return Ok(appointments);
+            if (!appointments.Any()) return NotFound("No hay elementos en la lista.");
+            return Ok(appointments.Select(ToResponse).ToList());
         }
 
         [HttpGet("availability")]
@@ -61,23 +64,23 @@ namespace Presentation.Controllers
         }
 
         [HttpGet("{id}")]
-        public ActionResult<Appointment> GetById([FromRoute] int id)
+        public ActionResult<AppointmentResponse> GetById([FromRoute] int id)
         {
             var appointment = AppointmentsRepository.GetById(id);
-            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
-            return Ok(appointment);
+            if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
+            return Ok(ToResponse(appointment));
         }
 
         [HttpPatch("{id}/confirm")]
-        public ActionResult<Appointment> Confirm([FromRoute] int id)
+        public ActionResult<AppointmentResponse> Confirm([FromRoute] int id)
         {
             var appointment = AppointmentsRepository.GetById(id);
-            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
+            if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
 
             try
             {
                 appointment.Confirm();
-                return Ok(appointment);
+                return Ok(ToResponse(appointment));
             }
             catch (InvalidOperationException ex)
             {
@@ -86,15 +89,15 @@ namespace Presentation.Controllers
         }
 
         [HttpPatch("{id}/cancel")]
-        public ActionResult<Appointment> Cancel([FromRoute] int id)
+        public ActionResult<AppointmentResponse> Cancel([FromRoute] int id)
         {
             var appointment = AppointmentsRepository.GetById(id);
-            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
+            if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
 
             try
             {
                 appointment.Cancel();
-                return Ok(appointment);
+                return Ok(ToResponse(appointment));
             }
             catch (InvalidOperationException ex)
             {
@@ -103,20 +106,20 @@ namespace Presentation.Controllers
         }
 
         [HttpPatch("{id}/reschedule")]
-        public ActionResult<Appointment> Reschedule([FromRoute] int id, [FromBody] RescheduleAppointmentRequest request)
+        public ActionResult<AppointmentResponse> Reschedule([FromRoute] int id, [FromBody] RescheduleAppointmentRequest request)
         {
             var appointment = AppointmentsRepository.GetById(id);
-            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
+            if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
 
             if (AppointmentsRepository.HasScheduleConflict(appointment.LawyerId, request.Date, request.Time, request.EndTime))
             {
-                return Conflict("The lawyer already has an appointment at that time.");
+                return Conflict("El abogado ya tiene un turno en ese horario.");
             }
 
             try
             {
                 appointment.Reschedule(request.Date, request.Time, request.EndTime);
-                return Ok(appointment);
+                return Ok(ToResponse(appointment));
             }
             catch (InvalidOperationException ex)
             {
@@ -128,7 +131,7 @@ namespace Presentation.Controllers
         public ActionResult Delete([FromRoute] int id)
         {
             var appointment = AppointmentsRepository.GetById(id);
-            if (appointment == null) return NotFound($"There is no element that match with the id {id}");
+            if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
 
             try
             {
