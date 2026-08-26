@@ -1,13 +1,63 @@
-﻿namespace Presentation.Models
+﻿using System.Text.Json.Serialization;
+
+namespace Presentation.Models
 {
-    public class User
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+    [JsonDerivedType(typeof(Client), typeDiscriminator: "client")]
+    [JsonDerivedType(typeof(Lawyer), typeDiscriminator: "lawyer")]
+    [JsonDerivedType(typeof(Admin), typeDiscriminator: "admin")]
+    public abstract class User
     {
-        public int Id { get; set; }
-        public string? Name { get; set; }
-        public string? Dni { get; set; }
-        public string? Email { get; set; }
-        public string? Password { get; set; }
-        public string? Role { get; set; } = string.Empty; // "cliente" | "abogado" | "sysadmin"
-        public bool Active { get; set; } = true;
+        private static int nextId = 1;
+
+        public int Id { get; }
+        public string FirstName { get; private set; }
+        public string LastName { get; private set; }
+        public string Dni { get; private set; }
+        public string Email { get; private set; }
+        public string Password { get; private set; }
+        public bool Active { get; private set; }
+
+        protected User(string firstName, string lastName, string dni, string email, string password)
+        {
+            if (string.IsNullOrWhiteSpace(firstName))
+                throw new ArgumentException("El nombre es obligatorio.", nameof(firstName));
+
+            if (string.IsNullOrWhiteSpace(lastName))
+                throw new ArgumentException("El apellido es obligatorio.", nameof(lastName));
+
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("El email es obligatorio.", nameof(email));
+
+            Id = nextId++;
+            FirstName = firstName;
+            LastName = lastName;
+            Dni = dni;
+            Email = email;
+            Password = password;
+            Active = true;
+        }
+
+        public void UpdateDetails(string firstName, string lastName, string dni, string email)
+        {
+            if (string.IsNullOrWhiteSpace(firstName))
+                throw new ArgumentException("El nombre es obligatorio.", nameof(firstName));
+
+            if (string.IsNullOrWhiteSpace(lastName))
+                throw new ArgumentException("El apellido es obligatorio.", nameof(lastName));
+
+            FirstName = firstName;
+            LastName = lastName;
+            Dni = dni;
+            Email = email;
+        }
+
+        public void Deactivate()
+        {
+            if (!Active)
+                throw new InvalidOperationException("El usuario ya está inactivo.");
+
+            Active = false;
+        }
     }
 }
