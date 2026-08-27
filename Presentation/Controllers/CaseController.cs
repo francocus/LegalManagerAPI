@@ -1,6 +1,6 @@
-﻿using Presentation.Data;
-using Presentation.DTOs;
+﻿using Presentation.DTOs;
 using Presentation.Models;
+using Presentation.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Presentation.Controllers
@@ -9,6 +9,13 @@ namespace Presentation.Controllers
     [ApiController]
     public class CaseController : ControllerBase
     {
+        private readonly ICaseService caseService;
+
+        public CaseController(ICaseService caseService)
+        {
+            this.caseService = caseService;
+        }
+
         private static CaseResponse ToResponse(Case c) => new(
             c.Id, c.CaseNumber, c.Title, c.Area, c.Status,
             c.StartDate, c.LastUpdate, c.ClosingDate,
@@ -17,37 +24,19 @@ namespace Presentation.Controllers
         [HttpPost]
         public ActionResult<CaseResponse> Create([FromBody] CreateCaseRequest request)
         {
-            if (CasesRepository.GetAll().Any(c => c.CaseNumber == request.CaseNumber))
-                return Conflict("Ya existe un expediente con ese número.");
-
-            var client = UsersRepository.GetById(request.ClientId);
-            if (client is not Client)
-                return BadRequest("El cliente indicado no es válido.");
-
-            var lawyer = UsersRepository.GetById(request.LawyerId);
-            if (lawyer is not Lawyer)
-                return BadRequest("El abogado indicado no es válido.");
-
-            var createdBy = UsersRepository.GetById(request.CreatedByUserId);
-            if (createdBy is not Lawyer && createdBy is not Admin)
-                return BadRequest("El expediente solo puede ser creado por un abogado o un administrador.");
-
             try
             {
-                var caseItem = new Case(request.CaseNumber, request.Title, request.Area, request.StartDate, request.Description, request.Notes, request.ClientId, request.LawyerId, request.CreatedByUserId);
-                CasesRepository.Add(caseItem);
+                var caseItem = caseService.Create(request);
                 return CreatedAtAction(nameof(GetById), new { id = caseItem.Id }, ToResponse(caseItem));
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
 
         [HttpGet]
         public ActionResult<IReadOnlyList<CaseResponse>> GetAll()
         {
-            var cases = CasesRepository.GetAll();
+            var cases = caseService.GetAll();
             if (!cases.Any()) return NotFound("No hay elementos en la lista.");
             return Ok(cases.Select(ToResponse).ToList());
         }
@@ -55,7 +44,7 @@ namespace Presentation.Controllers
         [HttpGet("{id}")]
         public ActionResult<CaseResponse> GetById([FromRoute] int id)
         {
-            var caseItem = CasesRepository.GetById(id);
+            var caseItem = caseService.GetById(id);
             if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
             return Ok(ToResponse(caseItem));
         }
@@ -63,12 +52,10 @@ namespace Presentation.Controllers
         [HttpPut("{id}")]
         public ActionResult<CaseResponse> Update([FromRoute] int id, [FromBody] UpdateCaseRequest request)
         {
-            var caseItem = CasesRepository.GetById(id);
-            if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
-
             try
             {
-                caseItem.UpdateDetails(request.Title, request.Area, request.Description, request.Notes);
+                var caseItem = caseService.Update(id, request);
+                if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
                 return Ok(ToResponse(caseItem));
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
@@ -78,12 +65,10 @@ namespace Presentation.Controllers
         [HttpPatch("{id}/status")]
         public ActionResult<CaseResponse> ChangeStatus([FromRoute] int id, [FromBody] ChangeStatusRequest request)
         {
-            var caseItem = CasesRepository.GetById(id);
-            if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
-
             try
             {
-                caseItem.ChangeStatus(request.Status);
+                var caseItem = caseService.ChangeStatus(id, request);
+                if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
                 return Ok(ToResponse(caseItem));
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
@@ -93,61 +78,39 @@ namespace Presentation.Controllers
         [HttpPatch("{id}/lawyers/add")]
         public ActionResult<CaseResponse> AddLawyer([FromRoute] int id, [FromBody] AddLawyerRequest request)
         {
-            var caseItem = CasesRepository.GetById(id);
-            if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
-
-            var lawyer = UsersRepository.GetById(request.LawyerId);
-            if (lawyer is not Lawyer)
-                return BadRequest("El abogado indicado no es válido.");
-
             try
             {
-                caseItem.AddLawyer(request.LawyerId);
+                var caseItem = caseService.AddLawyer(id, request);
+                if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
                 return Ok(ToResponse(caseItem));
             }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
             catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
 
         [HttpPatch("{id}/lawyers/remove")]
         public ActionResult<CaseResponse> RemoveLawyer([FromRoute] int id, [FromBody] RemoveLawyerRequest request)
         {
-            var caseItem = CasesRepository.GetById(id);
-            if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
-
-            var lawyer = UsersRepository.GetById(request.LawyerId);
-            if (lawyer is not Lawyer)
-                return BadRequest("El abogado indicado no es válido.");
-
             try
             {
-                caseItem.RemoveLawyer(request.LawyerId);
+                var caseItem = caseService.RemoveLawyer(id, request);
+                if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
                 return Ok(ToResponse(caseItem));
             }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
             catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
 
         [HttpDelete("{id}")]
         public ActionResult Delete([FromRoute] int id)
         {
-            var caseItem = CasesRepository.GetById(id);
-            if (caseItem == null) return NotFound($"No existe un elemento con el id {id}.");
-
-            var hasActiveAppointments = AppointmentsRepository.GetAll()
-.Any(a => a.CaseId == id
-    && a.EffectiveStatus != AppointmentStatus.Cancelado && a.EffectiveStatus != AppointmentStatus.Finalizado);
-
-            if (hasActiveAppointments)
-                return Conflict($"El expediente con id {id} tiene turnos activos asociados.");
-
             try
             {
-                caseItem.Deactivate();
+                if (!caseService.Delete(id))
+                    return NotFound($"No existe un elemento con el id {id}.");
                 return NoContent();
             }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
+            catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
     }
 }
