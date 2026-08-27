@@ -1,7 +1,9 @@
 # Minuta de Relevamiento
 
 **Proyecto:** Legal Manager (Sistema de Gestión para Estudio Jurídico)
+
 **Fecha:** 18 de Agosto de 2026
+
 **Equipo de Desarrollo:** Agustín Angelini, Franco Cuscianna, Thiago Cuscianna
 
 ## 1. Temática de la Aplicación
