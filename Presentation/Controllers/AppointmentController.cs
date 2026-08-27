@@ -1,6 +1,6 @@
-﻿using Presentation.Data;
-using Presentation.DTOs;
+﻿using Presentation.DTOs;
 using Presentation.Models;
+using Presentation.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Presentation.Controllers
@@ -9,6 +9,13 @@ namespace Presentation.Controllers
     [ApiController]
     public class AppointmentController : ControllerBase
     {
+        private readonly IAppointmentService appointmentService;
+
+        public AppointmentController(IAppointmentService appointmentService)
+        {
+            this.appointmentService = appointmentService;
+        }
+
         private static AppointmentResponse ToResponse(Appointment a) => new(
             a.Id, a.Title, a.Date, a.Time, a.EndTime, a.Reason, a.Status, a.EffectiveStatus,
             a.Area, a.Location, a.Notes, a.ClientId, a.LawyerId, a.CaseId, a.Active);
@@ -16,42 +23,19 @@ namespace Presentation.Controllers
         [HttpPost]
         public ActionResult<AppointmentResponse> Create([FromBody] CreateAppointmentRequest request)
         {
-            var client = UsersRepository.GetById(request.ClientId);
-            if (client is not Client)
-                return BadRequest("El cliente indicado no es válido.");
-
-            var lawyer = UsersRepository.GetById(request.LawyerId);
-            if (lawyer is not Lawyer)
-                return BadRequest("El abogado indicado no es válido.");
-
-            Case? relatedCase = null;
-            if (request.CaseId.HasValue)
-            {
-                relatedCase = CasesRepository.GetById(request.CaseId.Value);
-                if (relatedCase == null)
-                    return BadRequest("El expediente indicado no existe.");
-            }
-
-            if (AppointmentsRepository.HasScheduleConflict(request.LawyerId, request.Date, request.Time, request.EndTime))
-                return Conflict("El abogado ya tiene un turno en ese horario.");
-
             try
             {
-                var area = relatedCase != null ? relatedCase.Area : request.Area;
-                var appointment = new Appointment(request.Title, request.Date, request.Time, request.EndTime, request.Reason, area, request.Location, request.Notes, request.ClientId, request.LawyerId, request.CaseId);
-                AppointmentsRepository.Add(appointment);
+                var appointment = appointmentService.Create(request);
                 return CreatedAtAction(nameof(GetById), new { id = appointment.Id }, ToResponse(appointment));
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
 
         [HttpGet]
         public ActionResult<IReadOnlyList<AppointmentResponse>> GetAll()
         {
-            var appointments = AppointmentsRepository.GetAll();
+            var appointments = appointmentService.GetAll();
             if (!appointments.Any()) return NotFound("No hay elementos en la lista.");
             return Ok(appointments.Select(ToResponse).ToList());
         }
@@ -59,20 +43,17 @@ namespace Presentation.Controllers
         [HttpGet("availability")]
         public ActionResult<AvailabilityResponse> GetAvailability([FromQuery] int lawyerId, [FromQuery] DateOnly date)
         {
-            if (UsersRepository.GetById(lawyerId) is not Lawyer)
-                return BadRequest("El abogado indicado no es válido.");
-
-            var freeSlots = Appointment.ValidSlots
-                .Where(slot => !AppointmentsRepository.HasScheduleConflict(lawyerId, date, slot, slot))
-                .ToList();
-
-            return Ok(new AvailabilityResponse(freeSlots));
+            try
+            {
+                return Ok(new AvailabilityResponse(appointmentService.GetAvailability(lawyerId, date)));
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
         [HttpGet("{id}")]
         public ActionResult<AppointmentResponse> GetById([FromRoute] int id)
         {
-            var appointment = AppointmentsRepository.GetById(id);
+            var appointment = appointmentService.GetById(id);
             if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
             return Ok(ToResponse(appointment));
         }
@@ -80,74 +61,49 @@ namespace Presentation.Controllers
         [HttpPatch("{id}/confirm")]
         public ActionResult<AppointmentResponse> Confirm([FromRoute] int id)
         {
-            var appointment = AppointmentsRepository.GetById(id);
-            if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
-
             try
             {
-                appointment.Confirm();
+                var appointment = appointmentService.Confirm(id);
+                if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
                 return Ok(ToResponse(appointment));
             }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
+            catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
 
         [HttpPatch("{id}/cancel")]
         public ActionResult<AppointmentResponse> Cancel([FromRoute] int id)
         {
-            var appointment = AppointmentsRepository.GetById(id);
-            if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
-
             try
             {
-                appointment.Cancel();
+                var appointment = appointmentService.Cancel(id);
+                if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
                 return Ok(ToResponse(appointment));
             }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
+            catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
 
         [HttpPatch("{id}/reschedule")]
         public ActionResult<AppointmentResponse> Reschedule([FromRoute] int id, [FromBody] RescheduleAppointmentRequest request)
         {
-            var appointment = AppointmentsRepository.GetById(id);
-            if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
-
-            if (AppointmentsRepository.HasScheduleConflict(appointment.LawyerId, request.Date, request.Time, request.EndTime))
-            {
-                return Conflict("El abogado ya tiene un turno en ese horario.");
-            }
-
             try
             {
-                appointment.Reschedule(request.Date, request.Time, request.EndTime);
+                var appointment = appointmentService.Reschedule(id, request);
+                if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
                 return Ok(ToResponse(appointment));
             }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
+            catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
 
         [HttpDelete("{id}")]
         public ActionResult Delete([FromRoute] int id)
         {
-            var appointment = AppointmentsRepository.GetById(id);
-            if (appointment == null) return NotFound($"No existe un elemento con el id {id}.");
-
             try
             {
-                appointment.Deactivate();
+                if (!appointmentService.Delete(id))
+                    return NotFound($"No existe un elemento con el id {id}.");
                 return NoContent();
             }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
+            catch (InvalidOperationException ex) { return Conflict(ex.Message); }
         }
     }
 }
