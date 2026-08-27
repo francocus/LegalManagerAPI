@@ -3,9 +3,9 @@
 namespace Presentation.Models
 {
     [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-    [JsonDerivedType(typeof(Client), typeDiscriminator: "client")]
-    [JsonDerivedType(typeof(Lawyer), typeDiscriminator: "lawyer")]
-    [JsonDerivedType(typeof(Admin), typeDiscriminator: "admin")]
+    [JsonDerivedType(typeof(Client), typeDiscriminator: UserType.Client)]
+    [JsonDerivedType(typeof(Lawyer), typeDiscriminator: UserType.Lawyer)]
+    [JsonDerivedType(typeof(Admin), typeDiscriminator: UserType.Admin)]
     public abstract class User
     {
         private static int nextId = 1;
@@ -27,6 +27,9 @@ namespace Presentation.Models
             if (string.IsNullOrWhiteSpace(lastName))
                 throw new ArgumentException("El apellido es obligatorio.", nameof(lastName));
 
+            if (string.IsNullOrWhiteSpace(dni))
+                throw new ArgumentException("El DNI es obligatorio.", nameof(dni));
+
             if (string.IsNullOrWhiteSpace(email))
                 throw new ArgumentException("El email es obligatorio.", nameof(email));
 
@@ -47,6 +50,9 @@ namespace Presentation.Models
 
             if (string.IsNullOrWhiteSpace(lastName))
                 throw new ArgumentException("El apellido es obligatorio.", nameof(lastName));
+
+            if (string.IsNullOrWhiteSpace(dni))
+                throw new ArgumentException("El DNI es obligatorio.", nameof(dni));
 
             if (string.IsNullOrWhiteSpace(email))
                 throw new ArgumentException("El email es obligatorio.", nameof(email));

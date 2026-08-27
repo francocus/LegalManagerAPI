@@ -20,7 +20,7 @@ namespace Presentation.Controllers
         {
             var phone = user switch { Client c => c.Phone, Lawyer l => l.Phone, _ => null };
             var address = (user as Client)?.Address;
-            return new(user.Id, user.FirstName, user.LastName, user.Dni, user.Email, user.RegistrationDate, user switch { Client => "client", Lawyer => "lawyer", Admin => "admin", _ => "unknown" }, phone, address);
+            return new(user.Id, user.FirstName, user.LastName, user.Dni, user.Email, user.RegistrationDate, user switch { Client => UserType.Client, Lawyer => UserType.Lawyer, Admin => UserType.Admin, _ => "unknown" }, phone, address);
         }
 
         [HttpPost("client")]
