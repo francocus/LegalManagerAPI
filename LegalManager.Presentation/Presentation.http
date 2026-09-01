@@ -1,6 +1,19 @@
-@Presentation_HostAddress = http://localhost:5133
+@LegalManager_HostAddress = http://localhost:5133
 
-GET {{Presentation_HostAddress}}/weatherforecast/
+GET {{LegalManager_HostAddress}}/api/users/
 Accept: application/json
 
 ###
+
+GET {{LegalManager_HostAddress}}/api/cases/
+Accept: application/json
+
+###
+
+GET {{LegalManager_HostAddress}}/api/appointments/
+Accept: application/json
+
+###
+
+GET {{LegalManager_HostAddress}}/api/appointments/availability?lawyerId=1&date=2026-09-15
+Accept: application/json
