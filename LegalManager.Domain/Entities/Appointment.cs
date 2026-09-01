@@ -3,7 +3,7 @@
     public class Appointment
     {
         private static int nextId = 1;
-        public static readonly TimeOnly[] ValidSlots =
+        public static readonly IReadOnlyList<TimeOnly> ValidSlots = new List<TimeOnly>
         {
             new(9, 0), new(10, 30), new(12, 0), new(14, 0), new(15, 30), new(17, 0)
         };
