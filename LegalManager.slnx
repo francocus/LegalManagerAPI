@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="Presentation/Presentation.csproj" />
+  <Project Path="LegalManager.Application/LegalManager.Application.csproj" />
+  <Project Path="LegalManager.Domain/LegalManager.Domain.csproj" />
+  <Project Path="LegalManager.Infrastructure/LegalManager.Infrastructure.csproj" />
+  <Project Path="LegalManager.Presentation/LegalManager.Presentation.csproj" />
 </Solution>
